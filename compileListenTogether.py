@@ -25,11 +25,8 @@ for imp in imports:
 with open(ts_precompile_file, 'w') as file:
   file.write(ts_contents)
 
-popen = subprocess.Popen(f"tsc --out {js_file} {ts_precompile_file}", stdout=subprocess.PIPE, shell=True)
-# for stdout_line in iter(popen.stdout.readline, ""):
-#     print(stdout_line)
-# popen.stdout.close()
-return_code = popen.wait()
+popen = subprocess.Popen(f"tsc --out {js_file} {ts_precompile_file}", shell=True)
+popen.wait()
 os.remove(ts_precompile_file)
 
 with open(js_file, 'r+') as f:

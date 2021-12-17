@@ -4,7 +4,7 @@ import { io, Socket } from 'socket.io-client' //ts
 //mjs import './node_modules/socket.io-client/dist/socket.io.min.js'
 
 (function ListenTogetherMain() {
-  if (!Spicetify.CosmosAsync || !Spicetify.Platform) {
+  if (!Spicetify.CosmosAsync || !Spicetify.Platform || !Spicetify.LocalStorage) {
     setTimeout(ListenTogetherMain, 1000);
     return;
   }
@@ -18,25 +18,29 @@ import { io, Socket } from 'socket.io-client' //ts
     skipToPrevious: Spicetify.Platform.PlayerAPI.skipToPrevious.bind(Spicetify.Platform.PlayerAPI),
   }
 
+  function OGPlay(trackUri: string) {
+    OGPlayerAPI.play({uri: trackUri}, {}, {}) 
+  }
+
   //#region Settings
   class Settings {
-    version = "1"
-    server = "http://localhost:8080/"
-    name = "Flafy"
+    settingsVersion? = "1"
+    server = ""
+    name = "Unnamed"
   }
 
   let settings: Settings;
 
   function updateSettings(newSettings: Settings) {
-    localStorage.setItem("listenTogether", JSON.stringify(newSettings))
+    Spicetify.LocalStorage.set("listenTogether", JSON.stringify(newSettings))
   }
 
   (function getSettings() {
-    let settingsString = null // localStorage.getItem("listenTogether")
+    let settingsString = Spicetify.LocalStorage.get("listenTogether")
     let newSettings = new Settings()
     if (settingsString !== null) {
       settings = JSON.parse(settingsString)
-      if (settings.version !== newSettings.version) {
+      if (settings.settingsVersion !== newSettings.settingsVersion) {
         settings = newSettings
         updateSettings(settings)
       }
@@ -91,124 +95,109 @@ import { io, Socket } from 'socket.io-client' //ts
   }
   new Spicetify.Menu.SubMenu("Listen Together", Object.values(menuItems)).register();
 
-  Spicetify.Platform.PlayerAPI.play = (uri: {uri: string, metadata: any}, origins: any, options: any) => {
-    restrictAccess(() => OGPlayerAPI.play(uri, origins, options), isHost || !!options.fromHost, "Only the host can change songs!")
+  Spicetify.Platform.PlayerAPI.play = (uri: any, origins: any, options: any) => {
+    restrictAccess(() => OGPlayerAPI.play(uri, origins, options), !!options.fromHost, "Only the host can change songs!", () => {
+      let track: string | undefined = uri.uri
+      if (!track?.includes("spotify:track:")) {
+        track = options.skipTo.uri
+      }
+      socket.emit("requestChangeSong", track)
+    })
   }
 
   Spicetify.Platform.PlayerAPI.pause = (fromHost?: boolean) => {
-    restrictAccess(() => OGPlayerAPI.pause(), isHost || !!fromHost, "Only the host can pause songs!", () => {
-      OGPlayerAPI.pause()
-      if (!fromHost) socket.emit("stopSong", Spicetify.Player.data.track?.uri)
+    restrictAccess(() => OGPlayerAPI.pause(), !!fromHost, "Only the host can pause songs!", () => {
+      socket.emit("requestUpdateSong", true, Spicetify.Player.getProgress())
     })
   }
   
   Spicetify.Platform.PlayerAPI.resume = (fromHost?: boolean) => {
-    restrictAccess(() => OGPlayerAPI.resume(), isHost || !!fromHost, "Only the host can resume songs!", () => {
-      if (fromHost) {
-        OGPlayerAPI.resume()
-      } else {
-        socket.emit("continueSong", Spicetify.Player.data.track?.uri, Spicetify.Player.getProgress())
-      }
+    restrictAccess(() => OGPlayerAPI.resume(), !!fromHost, "Only the host can resume songs!", () => {
+      socket.emit("requestUpdateSong", false, Spicetify.Player.getProgress())
     })
   }
 
   Spicetify.Platform.PlayerAPI.seekTo = (milliseconds: number, fromHost?: boolean) => {
-    restrictAccess(() => OGPlayerAPI.seekTo(milliseconds), isHost || !!fromHost, "Only the host can seek songs!", () => {
-      if (fromHost) {
-        OGPlayerAPI.seekTo(milliseconds)
-      } else {
-        socket.emit("continueSong", Spicetify.Player.data.track?.uri, milliseconds)
-      }
+    restrictAccess(() => OGPlayerAPI.seekTo(milliseconds), !!fromHost, "Only the host can seek songs!", () => {
+      socket.emit("requestUpdateSong", !Spicetify.Player.isPlaying(), milliseconds)
     })
   }
 
   Spicetify.Platform.PlayerAPI.skipToNext = (e: any, fromHost?: boolean) => {
-    restrictAccess(() => OGPlayerAPI.skipToNext(e), isHost || !!fromHost, "Only the host can change songs!")
+    restrictAccess(() => OGPlayerAPI.skipToNext(e), !!fromHost, "Only the host can change songs!", () => {})
   }
 
   Spicetify.Platform.PlayerAPI.skipToPrevious = (e: any, fromHost?: boolean) => {
-    restrictAccess(() => OGPlayerAPI.skipToPrevious(e), isHost || !!fromHost, "Only the host can change songs!")
+    restrictAccess(() => OGPlayerAPI.skipToPrevious(e), !!fromHost, "Only the host can change songs!", () => {})
   }
 
-  function restrictAccess(ogFunc: Function, condition: boolean, restrictMessage: string, hostFunc?: Function) {
-    if (on) {
-      if (condition) {
-        if (hostFunc === undefined)
-          ogFunc()
-        else
-          hostFunc()
-      } else {
-        Spicetify.showNotification(restrictMessage)
-      }
-    } else {
+  function restrictAccess(ogFunc: Function, fromServer: boolean, restrictMessage: string, hostFunc: Function) {
+    if (fromServer || !on) {
       ogFunc()
+    } else if (isHost) {
+      hostFunc()
+    } else {
+      Spicetify.showNotification(restrictMessage)
     }
   }
 
   Spicetify.Player.addEventListener("songchange", () => {
-    if (on && Spicetify.Player.data.track?.uri.includes("spotify:track")) {
-      resetSong()
-      if (isHost) {
-        socket.emit("playSong", Spicetify.Player.data.track?.uri)
-      }
+    if (on && Spicetify.Player.data.track?.uri.includes("spotify:track:")) {
+      socket.emit("changedSong", Spicetify.Player.data.track?.uri)
+      Spicetify.Platform.PlayerAPI.pause(true)
+      Spicetify.Platform.PlayerAPI.seekTo(0, true)
     }
   })
 
-  function resetSong() {
-    Spicetify.Platform.PlayerAPI.pause(true)
-    Spicetify.Platform.PlayerAPI.seekTo(0, true)
+  function runClient() {
+    attempting = true;
+  
+    socket = io(settings.server, {
+      'reconnectionDelay': 1000,
+      'secure':true,
+      'reconnectionAttempts': 2,
+      'reconnection':true       
+    })
+
+    socket.on("connect", () => {
+      attempting = false
+      on = true
+      isHost = false
+      menuItems.connectToServer.setName("Disconnect from server")
+      OGPlay("")
+      let name = prompt("Enter your name:", settings.name)
+      if (name === null || name.length === 0) {
+        name = "Unnamed"
+      }
+      socket.emit("login", name)
+      settings.name = name
+      updateSettings(settings)
+    })
+    
+    socket.on("updateSong", (pause: boolean, milliseconds: number) => {
+      OGPlayerAPI.seekTo(milliseconds)
+      if (pause) {
+        if (Spicetify.Player.isPlaying()) OGPlayerAPI.pause()
+      } else {
+        if (!Spicetify.Player.isPlaying()) OGPlayerAPI.resume()
+      }
+    })
+
+    socket.on("changeSong", (trackUri: string) => {
+      OGPlay(trackUri)
+    })
+  
+    socket.on("error", () => {
+      stopClient()
+      alert(`Couldn't connect to server ${settings.server}`)
+    })
   }
 
   function stopClient() {
     socket?.disconnect()
     on = false
+    isHost = false
     attempting = false
     menuItems.connectToServer.setName("Connect to server")
-  }
-
-  function runClient() {
-    attempting = true;
-  
-    socket = io(settings.server)
-
-    socket.on("connect", () => {
-      attempting = false
-      on = true
-      menuItems.connectToServer.setName("Disconnect from server")
-      socket.emit("login", prompt("Enter your name:", settings.name))
-    })
-
-    socket.on("playSongFromHost", (trackUri: string, playDate: number) => {
-      if (Spicetify.Player.data.track?.uri !== trackUri) {
-        Spicetify.Platform.PlayerAPI.play({uri: trackUri}, {}, {fromHost: true})
-      }
-      resetSong()
-      setTimeout(() => Spicetify.Platform.PlayerAPI.resume(true), playDate-Date.now())
-    })
-
-    socket.on("stopSongFromHost", (trackUri: string) => {
-      if (Spicetify.Player.data.track?.uri !== trackUri) {
-        Spicetify.Platform.PlayerAPI.play({uri: trackUri}, {}, {fromHost: true})
-      }
-      else {
-        Spicetify.Platform.PlayerAPI.pause(true)
-      }
-    })
-
-    socket.on("continueSongFromHost", (trackUri: string, position: number, playDate: number) => {
-      if (Spicetify.Player.data.track?.uri !== trackUri) {
-        Spicetify.Platform.PlayerAPI.play({uri: trackUri}, {}, {fromHost: true})
-      }
-      resetSong()
-      setTimeout(() => {
-        Spicetify.Platform.PlayerAPI.seekTo(position, true)
-        Spicetify.Platform.PlayerAPI.resume(true)
-      }, playDate-Date.now())
-    })
-  
-    socket.on("error", () => { 
-      stopClient()
-      alert(`Couldn't connect to server ${settings.server}`)
-    })
   }
 })()
