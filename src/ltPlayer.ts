@@ -13,7 +13,7 @@ export default class LTPlayer {
 
   constructor() {
     this.patcher.patchAll()
-    Spicetify.Player.addEventListener("songchange", this.onSongChange)
+    Spicetify.Player.addEventListener("songchange", this.onSongChange.bind(this))
   }
 
   requestChangeSong(trackUri: string) {
