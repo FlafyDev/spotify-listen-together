@@ -1,11 +1,10 @@
 {
-  "name": "spotifyextensionnewmethod",
-  "version": "1.0.0",
+  "name": "spotify-listen-together",
+  "version": "0.1.0",
   "description": "",
   "scripts": {
     "build": "tsc && browserify dist/index.js -o dist/bundle.js",
-    "spotify": "npm run build && node dist/pushExtension",
-    "start-dev": "nodemon src/server.ts"
+    "spotify": "npm run build && node dist/pushExtension"
   },
   "keywords": [],
   "author": "",
