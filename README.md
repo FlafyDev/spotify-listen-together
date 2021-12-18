@@ -13,7 +13,9 @@ Spotify Listen Together is an extension for [Spicetify](https://spicetify.app/) 
 
 ### Creating a Server
 To listen together with others, you must first create a server for everyone to join to.
-To get started, go to [Spotify Listen Together Server](https://github.com/FlafyDev/spotify-listen-together-server).
+To get started, go to [Spotify Listen Together Server](https://github.com/FlafyDev/spotify-listen-together-server) or host with Heroku.
+
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/FlafyDev/spotify-listen-together-server)
 
 ### Joining a Server
 Open the menu and under "Listen Together" there will be a "Connect to server" item. You'll need to enter the server's address and your name.
