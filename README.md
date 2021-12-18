@@ -21,5 +21,5 @@ Open the menu and under "Listen Together" there will be a "Connect to server" it
 ### Playing, Seeking, and Pausing Songs
 After joining a server you might have realized that you can't play anything. Only the hosts are able to change, seek, and pause songs. To gain access to be a host, open the menu and under "Listen Together" there will be a "Request host" item. You'll need to enter the password set by the server.
 
-### Disconnecting from a Server
+### Disconnecting From a Server
 Open the menu and under "Listen Together" there will be a "Disconnect from server" item.
