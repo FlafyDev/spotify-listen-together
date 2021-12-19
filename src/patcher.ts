@@ -16,10 +16,13 @@ export default class Patcher {
       this.restrictAccess(() => this.OGPlayerAPI.play(uri, origins, options), "Only the hosts can change songs!", () => {
         let track: string | undefined = uri.uri
         if (!track?.includes("spotify:track:")) {
-          track = options.skipTo.uri
+          track = options?.skipTo?.uri
         }
-        if (track !== undefined)
+        if (track?.includes("spotify:track:")) {
           this.ltPlayer.requestChangeSong(track)
+        } else {
+          Spicetify.showNotification("Can't play this! Spotify Listen Together can only play songs individually as of now.")
+        }
       })
     }
     
