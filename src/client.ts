@@ -8,9 +8,9 @@ export default class Client {
 
   constructor (public ltPlayer: LTPlayer) {}
   
-  connectToServer(server: string) {
+  connect(server: string) {
     this.connecting = true;
-    this.ltPlayer.ui.menuItems.connectToServer?.setName("Disconnect from server")
+    this.ltPlayer.ui.menuItems.joinServer?.setName("Leave the server")
     
     this.socket = io(server, {
       'reconnectionDelay': 1000,
@@ -43,17 +43,17 @@ export default class Client {
     })
   
     this.socket.on("error", () => {
-      this.stopClient()
-      alert(`Couldn't connect to server ${server}`)
+      this.disconnect()
+      alert(`Couldn't connect to "${server}".`)
     })
   }
   
-  stopClient() {
+  disconnect() {
     this.socket?.disconnect()
     this.socket = null
     this.connected = false
     this.ltPlayer.isHost = false
     this.connecting = false
-    this.ltPlayer.ui.menuItems.connectToServer?.setName("Connect to server")
+    this.ltPlayer.ui.menuItems.joinServer?.setName("Join a server")
   }
 }

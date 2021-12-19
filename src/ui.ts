@@ -1,7 +1,7 @@
 import LTPlayer from './ltPlayer'
 
 interface IMenuItems {
-  connectToServer?: Spicetify.Menu.Item,
+  joinServer?: Spicetify.Menu.Item,
   requestHost?: Spicetify.Menu.Item
 }
 
@@ -10,15 +10,15 @@ export default class UI {
 
   constructor (public ltPlayer: LTPlayer) {
     this.menuItems = {
-      connectToServer: new Spicetify.Menu.Item("Connect to server", false, () => {
+      joinServer: new Spicetify.Menu.Item("Join a server", false, () => {
         if (ltPlayer.client.connected || ltPlayer.client.connecting) {
-          ltPlayer.client.stopClient()
+          ltPlayer.client.disconnect()
         } else {
           let newServer = prompt("Enter the server's address:", ltPlayer.settingsManager.settings.server)?.replace(" ", "");
           if (!!newServer) {
             ltPlayer.settingsManager.settings.server = newServer
             ltPlayer.settingsManager.saveSettings()
-            ltPlayer.client.connectToServer(newServer)
+            ltPlayer.client.connect(newServer)
           }
         }
       }),
@@ -28,7 +28,7 @@ export default class UI {
           if (!!password) {
             ltPlayer.client.socket?.emit("requestHost", password, (permitted: boolean) => {
               if (permitted) {
-                alert("You're now the host.")
+                alert("You're now a host.")
                 ltPlayer.isHost = true
               } else {
                 alert("Host request denied.")

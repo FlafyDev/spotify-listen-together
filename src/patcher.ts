@@ -13,7 +13,7 @@ export default class Patcher {
 
   patchAll() {
     Spicetify.Platform.PlayerAPI.play = (uri: any, origins: any, options: any) => {
-      this.restrictAccess(() => this.OGPlayerAPI.play(uri, origins, options), "Only the host can change songs!", () => {
+      this.restrictAccess(() => this.OGPlayerAPI.play(uri, origins, options), "Only the hosts can change songs!", () => {
         let track: string | undefined = uri.uri
         if (!track?.includes("spotify:track:")) {
           track = options.skipTo.uri
@@ -24,29 +24,29 @@ export default class Patcher {
     }
     
     Spicetify.Platform.PlayerAPI.pause = () => {
-      this.restrictAccess(() => this.OGPlayerAPI.pause(), "Only the host can pause songs!", () => {
+      this.restrictAccess(() => this.OGPlayerAPI.pause(), "Only the hosts can pause songs!", () => {
         this.ltPlayer.requestUpdateSong(true, Spicetify.Player.getProgress())
       })
     }
     
     Spicetify.Platform.PlayerAPI.resume = () => {
-      this.restrictAccess(() => this.OGPlayerAPI.resume(), "Only the host can resume songs!", () => {
+      this.restrictAccess(() => this.OGPlayerAPI.resume(), "Only the hosts can resume songs!", () => {
         this.ltPlayer.requestUpdateSong(false, Spicetify.Player.getProgress())
       })
     }
     
     Spicetify.Platform.PlayerAPI.seekTo = (milliseconds: number) => {
-      this.restrictAccess(() => this.OGPlayerAPI.seekTo(milliseconds), "Only the host can seek songs!", () => {
+      this.restrictAccess(() => this.OGPlayerAPI.seekTo(milliseconds), "Only the hosts can seek songs!", () => {
         this.ltPlayer.requestUpdateSong(!Spicetify.Player.isPlaying(), milliseconds)
       })
     }
     
     Spicetify.Platform.PlayerAPI.skipToNext = (e: any) => {
-      this.restrictAccess(() => this.OGPlayerAPI.skipToNext(e), "Only the host can change songs!", () => { })
+      this.restrictAccess(() => this.OGPlayerAPI.skipToNext(e), "Only the hosts can change songs!", () => { })
     }
     
     Spicetify.Platform.PlayerAPI.skipToPrevious = (e: any) => {
-      this.restrictAccess(() => this.OGPlayerAPI.skipToPrevious(e), "Only the host can change songs!", () => { })
+      this.restrictAccess(() => this.OGPlayerAPI.skipToPrevious(e), "Only the hosts can change songs!", () => { })
     }
   }
   
