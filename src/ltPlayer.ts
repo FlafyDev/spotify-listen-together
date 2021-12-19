@@ -1,8 +1,8 @@
-import { Socket } from "socket.io-client";
 import Client from "./client";
 import Patcher from "./patcher";
 import SettingsManager from "./settings";
 import UI from "./ui";
+import pjson from '../package.json';
 
 export default class LTPlayer {
   client = new Client(this)
@@ -10,6 +10,7 @@ export default class LTPlayer {
   settingsManager = new SettingsManager()
   ui = new UI(this)
   isHost = false
+  version = pjson.version
 
   constructor() {
     this.patcher.patchAll()

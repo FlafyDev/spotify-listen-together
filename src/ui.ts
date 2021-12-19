@@ -34,6 +34,8 @@ export default class UI {
                 alert("Host request denied.")
               }
             })
+          } else {
+            alert("Host request denied.")
           }
         } else {
           alert("Please connect to a server.")

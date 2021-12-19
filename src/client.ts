@@ -16,7 +16,7 @@ export default class Client {
       'reconnectionDelay': 1000,
       'secure':true,
       'reconnectionAttempts': 2,
-      'reconnection':true       
+      'reconnection':true
     })
   
     this.socket.on("connect", () => {
@@ -27,7 +27,10 @@ export default class Client {
       if (name === null || name.length === 0) {
         name = "Unnamed"
       }
-      this.socket!.emit("login", name)
+      this.socket!.emit("login", name, this.ltPlayer.version, (versionRequirements: string) => {
+        this.socket?.disconnect()
+        setTimeout(() => alert(`Your Spotify Listen Together's version isn't compatible with the server's version. Consider switching to a version that meets these requirements: "${versionRequirements}".`), 1)
+      })
       this.ltPlayer.onLogin()
       this.ltPlayer.settingsManager.settings.name = name
       this.ltPlayer.settingsManager.saveSettings()
@@ -35,13 +38,14 @@ export default class Client {
     
     this.socket.on("updateSong", (pause: boolean, milliseconds: number) => {
       this.ltPlayer.updateSong(pause, milliseconds)
-      
     })
   
     this.socket.on("changeSong", (trackUri: string) => {
       this.ltPlayer.changeSong(trackUri)
     })
   
+    this.socket.on("disconnect", this.disconnect.bind(this))
+
     this.socket.on("error", () => {
       this.disconnect()
       alert(`Couldn't connect to "${server}".`)
