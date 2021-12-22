@@ -25,3 +25,8 @@ After joining a server you might have realized that you can't play anything. Onl
 
 ### Disconnecting From a Server
 Open the menu and under "Listen Together" there will be a "Disconnect from server" item.
+
+## TODOs
+- Play playlists
+- Add chat
+- Invite others with a link through apps
