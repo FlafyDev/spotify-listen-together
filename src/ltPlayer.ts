@@ -3,10 +3,12 @@ import Patcher from "./patcher";
 import SettingsManager from "./settings";
 import UI from "./ui";
 import pjson from '../package.json';
+import SpotifyUtils from "./spotifyUtils";
 
 export default class LTPlayer {
   client = new Client(this)
   patcher = new Patcher(this)
+  spotifyUtils = new SpotifyUtils(this);
   settingsManager = new SettingsManager()
   ui = new UI(this)
   isHost = false
@@ -14,7 +16,8 @@ export default class LTPlayer {
 
   constructor() {
     this.patcher.patchAll()
-    Spicetify.Player.addEventListener("songchange", this.onSongChange.bind(this))
+    Spicetify.Player.addEventListener("songchange", this.onSongChange.bind(this));
+    (<any>Spicetify).OGPlayerAPI = this.patcher.OGPlayerAPI
   }
 
   requestChangeSong(trackUri: string) {
@@ -22,11 +25,18 @@ export default class LTPlayer {
   }
 
   requestUpdateSong(paused: boolean, milliseconds: number) {
-    this.client.socket?.emit("requestUpdateSong", paused, milliseconds)
+    if (this.spotifyUtils.isValidTrack(this.spotifyUtils.getCurrentTrackUri()))
+      this.client.socket?.emit("requestUpdateSong", paused, milliseconds)
+    else
+      this.updateSong(paused, milliseconds)
   }
 
   changeSong(trackUri: string) {
-    this.forcePlay(trackUri)
+    if (Spicetify.Player.data.track?.uri === trackUri) {
+      this.client.socket?.emit("changedSong", Spicetify.Player.data.track?.uri)
+    } else {
+      this.spotifyUtils.forcePlayTrack(trackUri)
+    }
   }
 
   updateSong(pause: boolean, milliseconds: number) {
@@ -41,7 +51,7 @@ export default class LTPlayer {
   }
 
   onSongChange() {
-    if (this.client.connected && Spicetify.Player.data.track?.uri.includes("spotify:track:")) {
+    if (this.client.connected && this.spotifyUtils.isValidTrack(Spicetify.Player.data.track?.uri)) {
       this.client.socket?.emit("changedSong", Spicetify.Player.data.track?.uri)
       this.patcher.OGPlayerAPI.pause()
       this.patcher.OGPlayerAPI.seekTo(0)
@@ -49,10 +59,6 @@ export default class LTPlayer {
   }
 
   onLogin() {
-    this.forcePlay("")
-  }
-
-  private forcePlay(trackUri: string) {
-    this.patcher.OGPlayerAPI.play({ uri: trackUri }, {}, {})
+    this.spotifyUtils.forcePlayTrack("")
   }
 }

@@ -35,13 +35,32 @@ export default class Client {
       this.ltPlayer.settingsManager.settings.name = name
       this.ltPlayer.settingsManager.saveSettings()
     })
-    
+
     this.socket.on("updateSong", (pause: boolean, milliseconds: number) => {
-      this.ltPlayer.updateSong(pause, milliseconds)
+      if (this.canChangeSong())
+        this.ltPlayer.updateSong(pause, milliseconds)
     })
   
     this.socket.on("changeSong", (trackUri: string) => {
-      this.ltPlayer.changeSong(trackUri)
+      if (this.canChangeSong())
+        this.ltPlayer.changeSong(trackUri)
+    })
+
+    this.socket.on("showMessage", (message: string) => {
+      alert(message)
+    })
+
+    this.socket.on("isHost", (isHost: boolean) => {
+      if (isHost != this.ltPlayer.isHost) {
+        this.ltPlayer.isHost = isHost
+        if (isHost) {
+          this.ltPlayer.ui.menuItems.requestHost?.setName("Cancel hosting");
+          alert("You are now a host.")
+        } else {
+          this.ltPlayer.ui.menuItems.requestHost?.setName("Request host");
+          alert("You are no longer a host.")
+        }
+      }
     })
   
     this.socket.on("disconnect", this.disconnect.bind(this))
@@ -59,5 +78,11 @@ export default class Client {
     this.ltPlayer.isHost = false
     this.connecting = false
     this.ltPlayer.ui.menuItems.joinServer?.setName("Join a server")
+    this.ltPlayer.ui.menuItems.requestHost?.setName("Request host");
+  }
+
+  canChangeSong() {
+    let track = this.ltPlayer.spotifyUtils.getCurrentTrackUri()
+    return !!track || this.ltPlayer.spotifyUtils.isValidTrack(track)
   }
 }

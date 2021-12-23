@@ -13,16 +13,18 @@ export default class Patcher {
 
   patchAll() {
     Spicetify.Platform.PlayerAPI.play = (uri: any, origins: any, options: any) => {
+      console.log(JSON.stringify([uri, origins, options]))
       this.restrictAccess(() => this.OGPlayerAPI.play(uri, origins, options), "Only the hosts can change songs!", () => {
-        let track: string | undefined = uri.uri
-        if (!track?.includes("spotify:track:")) {
-          track = options?.skipTo?.uri
-        }
-        if (track?.includes("spotify:track:")) {
-          this.ltPlayer.requestChangeSong(track)
-        } else {
-          Spicetify.showNotification("Can't play this! Spotify Listen Together can only play songs individually as of now.")
-        }
+        this.ltPlayer.spotifyUtils.forcePlay(uri, origins, options) // TODO: Add "paused" to options
+        // let track: string | undefined = uri.uri
+        // if (!track?.includes("spotify:track:")) {
+        //   track = options?.skipTo?.uri
+        // }
+        // if (track?.includes("spotify:track:")) {
+        //   this.ltPlayer.requestChangeSong(track)
+        // } else {
+        //   Spicetify.showNotification("Can't play this! Spotify Listen Together can only play songs individually as of now.")
+        // }
       })
     }
     
@@ -45,19 +47,27 @@ export default class Patcher {
     }
     
     Spicetify.Platform.PlayerAPI.skipToNext = (e: any) => {
-      this.restrictAccess(() => this.OGPlayerAPI.skipToNext(e), "Only the hosts can change songs!", () => { })
+      this.restrictAccess(() => this.OGPlayerAPI.skipToNext(e), "Only the hosts can change songs!")
     }
     
     Spicetify.Platform.PlayerAPI.skipToPrevious = (e: any) => {
-      this.restrictAccess(() => this.OGPlayerAPI.skipToPrevious(e), "Only the hosts can change songs!", () => { })
+      this.restrictAccess(() => this.OGPlayerAPI.skipToPrevious(e), "Only the hosts can change songs!", () => {
+        if (Spicetify.Player.getProgress() <= 3000)
+          this.OGPlayerAPI.skipToPrevious(e)
+        else
+          Spicetify.Player.seek(0)
+      })
     }
   }
   
-  private restrictAccess(ogFunc: Function, restrictMessage: string, hostFunc: Function) {
+  private restrictAccess(ogFunc: Function, restrictMessage: string, hostFunc?: Function) {
     if (!this.ltPlayer.client.connected) {
       ogFunc()
     } else if (this.ltPlayer.isHost) {
-      hostFunc()
+      if (hostFunc)
+        hostFunc()
+      else
+        ogFunc()
     } else {
       Spicetify.showNotification(restrictMessage)
     }

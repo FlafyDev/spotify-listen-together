@@ -24,18 +24,15 @@ export default class UI {
       }),
       requestHost: new Spicetify.Menu.Item("Request host", false, () => {
         if (ltPlayer.client.connected) {
-          let password = window.prompt("Password to access host:")
-          if (!!password) {
-            ltPlayer.client.socket?.emit("requestHost", password, (permitted: boolean) => {
-              if (permitted) {
-                alert("You're now a host.")
-                ltPlayer.isHost = true
-              } else {
-                alert("Host request denied.")
-              }
-            })
+          if (this.ltPlayer.isHost) {
+            this.ltPlayer.client.socket?.emit("cancelHost")
           } else {
-            alert("Host request denied.")
+            let password = window.prompt("Password to access host:")
+            if (!!password) {
+              ltPlayer.client.socket?.emit("requestHost", password)
+            } else {
+              alert("Host request denied.")
+            }
           }
         } else {
           alert("Please connect to a server.")

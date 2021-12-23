@@ -1,6 +1,6 @@
 {
   "name": "spotify-listen-together",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "",
   "scripts": {
     "build": "tsc && browserify dist/src/index.js -o dist/src/bundle.js",
