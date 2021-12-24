@@ -56,6 +56,7 @@ export default class Client {
         if (isHost) {
           this.ltPlayer.ui.menuItems.requestHost?.setName("Cancel hosting");
           alert("You are now a host.")
+          this.ltPlayer.onSongChange()
         } else {
           this.ltPlayer.ui.menuItems.requestHost?.setName("Request host");
           alert("You are no longer a host.")

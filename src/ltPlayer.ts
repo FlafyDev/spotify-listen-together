@@ -52,13 +52,25 @@ export default class LTPlayer {
 
   onSongChange() {
     if (this.client.connected && this.spotifyUtils.isValidTrack(Spicetify.Player.data.track?.uri)) {
-      this.client.socket?.emit("changedSong", Spicetify.Player.data.track?.uri)
-      this.patcher.OGPlayerAPI.pause()
+      if (this.isHost) {
+        let interval = setInterval(() => {
+          if (Spicetify.Platform.PlayerAPI._state?.item?.name) {
+            this.client.socket?.emit("changedSong", Spicetify.Player.data.track?.uri, Spicetify.Platform.PlayerAPI._state?.item?.name, Spicetify.Platform.PlayerAPI._state?.item?.images[0]['url'])
+            clearInterval(interval)
+          }
+        }, 100)
+      } else {
+        this.client.socket?.emit("changedSong", Spicetify.Player.data.track?.uri)
+      }
+      
+      if (Spicetify.Player.isPlaying())
+        this.patcher.OGPlayerAPI.pause()
       this.patcher.OGPlayerAPI.seekTo(0)
     }
   }
 
   onLogin() {
-    this.spotifyUtils.forcePlayTrack("")
+    if (Spicetify.Player.isPlaying())
+      this.patcher.OGPlayerAPI.pause()
   }
 }

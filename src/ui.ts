@@ -30,8 +30,6 @@ export default class UI {
             let password = window.prompt("Password to access host:")
             if (!!password) {
               ltPlayer.client.socket?.emit("requestHost", password)
-            } else {
-              alert("Host request denied.")
             }
           }
         } else {

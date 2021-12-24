@@ -28,4 +28,3 @@ Open the menu and under "Listen Together" there will be a "Disconnect from serve
 
 ## TODOs
 - Add chat
-- Invite others with a link through apps
