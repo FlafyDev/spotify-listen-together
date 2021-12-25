@@ -34,3 +34,4 @@ Example of the website:
 - Show if someone is the host/is watching an AD (on the website).
 - Wait if someone is watching an AD.
 - Handle listeners who joined while a song was playing.
+- Correct the current song's time evey few seconds.
