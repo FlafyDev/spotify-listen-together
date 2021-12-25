@@ -35,4 +35,4 @@ Example of the website:
 - Wait if someone is watching an AD.
 - Handle listeners who joined while a song was playing.
 - Correct the current song's time evey few seconds.
-- Ping server every few minutes (In case it's Heroku or something).
+- Ping server every few minutes (In case it's Heroku or something so it won't close).
