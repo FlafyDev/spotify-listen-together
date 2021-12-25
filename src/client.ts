@@ -13,10 +13,7 @@ export default class Client {
     this.ltPlayer.ui.menuItems.joinServer?.setName("Leave the server")
     
     this.socket = io(server, {
-      'reconnectionDelay': 1000,
       'secure':true,
-      'reconnectionAttempts': 2,
-      'reconnection':true
     })
   
     this.socket.on("connect", () => {
