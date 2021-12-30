@@ -6,9 +6,18 @@ export default class Client {
   connected = false
   socket: Socket | null = null
 
-  constructor (public ltPlayer: LTPlayer) {}
+  constructor (public ltPlayer: LTPlayer) {
+  }
   
   connect(server: string) {
+    // DEV
+    (<any>Spicetify).test1 = () => {
+      this.socket?.emit("watchingAD", true)
+    }
+    (<any>Spicetify).test2 = () => {
+      this.socket?.emit("watchingAD", false)
+    }
+
     this.connecting = true;
     this.ltPlayer.ui.menuItems.joinServer?.setName("Leave the server")
     
@@ -33,18 +42,22 @@ export default class Client {
       this.ltPlayer.settingsManager.saveSettings()
     })
 
-    this.socket.on("updateSong", (pause: boolean, milliseconds: number) => {
-      if (this.canChangeSong())
-        this.ltPlayer.updateSong(pause, milliseconds)
-    })
-  
-    this.socket.on("changeSong", (trackUri: string) => {
-      if (this.canChangeSong())
-        this.ltPlayer.changeSong(trackUri)
+    this.socket.onAny((ev: string, ...args: any) => {
+      console.log(`Receiving ${ev}: ${args}`)
     })
 
-    this.socket.on("showMessage", (message: string) => {
-      alert(message)
+    this.socket.on("changeSong", (trackUri: string) => this.ltPlayer.onChangeSong(trackUri))
+
+    this.socket.on("updateSong", (pause: boolean, milliseconds: number) => this.ltPlayer.onUpdateSong(pause, milliseconds))
+
+    this.socket.on("syncSong", (trackUri: string, paused: boolean, milliseconds: number) => this.ltPlayer.onSyncSong(trackUri, paused, milliseconds))
+
+    this.socket.on("showMessage", (message: string, info: boolean) => {
+      if (info) {
+        Spicetify.showNotification(message)
+      } else {
+        alert(message)
+      }
     })
 
     this.socket.on("isHost", (isHost: boolean) => {
@@ -53,7 +66,7 @@ export default class Client {
         if (isHost) {
           this.ltPlayer.ui.menuItems.requestHost?.setName("Cancel hosting");
           alert("You are now a host.")
-          this.ltPlayer.onSongChange()
+          this.ltPlayer.onSongChanged()
         } else {
           this.ltPlayer.ui.menuItems.requestHost?.setName("Request host");
           alert("You are no longer a host.")
@@ -61,7 +74,7 @@ export default class Client {
       }
     })
   
-    this.socket.on("disconnect", this.disconnect.bind(this))
+    this.socket.on("disconnect", () => this.disconnect())
 
     this.socket.on("error", () => {
       this.disconnect()
@@ -77,10 +90,5 @@ export default class Client {
     this.connecting = false
     this.ltPlayer.ui.menuItems.joinServer?.setName("Join a server")
     this.ltPlayer.ui.menuItems.requestHost?.setName("Request host");
-  }
-
-  canChangeSong() {
-    let track = this.ltPlayer.spotifyUtils.getCurrentTrackUri()
-    return !!track || this.ltPlayer.spotifyUtils.isValidTrack(track)
   }
 }

@@ -13,11 +13,23 @@ export default class LTPlayer {
   ui = new UI(this)
   isHost = false
   version = pjson.version
+  watchingAd = false;
 
   constructor() {
     this.patcher.patchAll()
-    Spicetify.Player.addEventListener("songchange", this.onSongChange.bind(this));
+    this.patcher.trackChanged.on((trackUri) => {
+      this.onSongChanged(trackUri!)
+    });
+
+    // DEV
     (<any>Spicetify).OGPlayerAPI = this.patcher.OGPlayerAPI
+  }
+
+  // Send
+  sendIsWatchingAd() {
+    const isWatchingAd = this.spotifyUtils.isAd(this.spotifyUtils.getCurrentTrackUri())
+    this.client.socket?.emit("watchingAD", isWatchingAd)
+    return isWatchingAd;
   }
 
   requestChangeSong(trackUri: string) {
@@ -28,49 +40,64 @@ export default class LTPlayer {
     if (this.spotifyUtils.isValidTrack(this.spotifyUtils.getCurrentTrackUri()))
       this.client.socket?.emit("requestUpdateSong", paused, milliseconds)
     else
-      this.updateSong(paused, milliseconds)
+      this.onUpdateSong(paused, milliseconds)
   }
 
-  changeSong(trackUri: string) {
-    if (Spicetify.Player.data.track?.uri === trackUri) {
-      this.client.socket?.emit("changedSong", Spicetify.Player.data.track?.uri)
-    } else {
+  // Received
+  onChangeSong(trackUri: string) {
+    if (!this.spotifyUtils.isAd(this.spotifyUtils.getCurrentTrackUri())) {
+      if (Spicetify.Player.data.track?.uri === trackUri) {
+        this.client.socket?.emit("changedSong", Spicetify.Player.data.track?.uri)
+      } else {
+        this.spotifyUtils.forcePlayTrack(trackUri)
+      }
+    }
+  }
+
+  onUpdateSong(pause: boolean, milliseconds?: number) {
+    if (this.spotifyUtils.isOnValidTrack()) {
+      if (milliseconds != undefined)
+        this.patcher.OGPlayerAPI.seekTo(milliseconds)
+      if (this.spotifyUtils.isPaused() !== pause) {
+        if (pause) {
+          this.patcher.OGPlayerAPI.pause()
+        } else {
+          this.patcher.OGPlayerAPI.resume()
+        }
+      }
+    }
+  }
+
+  onSyncSong(trackUri: string, paused: boolean, milliseconds: number) {
+    if (trackUri !== this.spotifyUtils.getCurrentTrackUri()) {
       this.spotifyUtils.forcePlayTrack(trackUri)
     }
+    this.spotifyUtils.onTrackInfoLoaded(trackUri, () => this.onUpdateSong(paused, milliseconds))
   }
 
-  updateSong(pause: boolean, milliseconds: number) {
-    this.patcher.OGPlayerAPI.seekTo(milliseconds)
-    if (Spicetify.Player.isPlaying() === pause) {
-      if (pause) {
-        this.patcher.OGPlayerAPI.pause()
+  // Events
+  onSongChanged(trackUri?: string) {
+    if (trackUri === undefined) trackUri = this.spotifyUtils.getCurrentTrackUri()
+    
+    if (this.client.connected) {
+      if (this.spotifyUtils.isValidTrack(trackUri)) {
+        this.spotifyUtils.onTrackInfoLoaded(trackUri!, () => {
+          if (Spicetify.Player.isPlaying()) this.patcher.OGPlayerAPI.pause()
+          this.patcher.OGPlayerAPI.seekTo(0)
+          this.client.socket?.emit("changedSong", trackUri, Spicetify.Platform.PlayerAPI._state?.item?.name, Spicetify.Platform.PlayerAPI._state?.item?.images[0]['url'])
+        })
       } else {
-        this.patcher.OGPlayerAPI.resume()
+        this.client.socket?.emit("changedSong", trackUri)
+        this.sendIsWatchingAd()
       }
-    }
-  }
-
-  onSongChange() {
-    if (this.client.connected && this.spotifyUtils.isValidTrack(Spicetify.Player.data.track?.uri)) {
-      if (this.isHost) {
-        let interval = setInterval(() => {
-          if (Spicetify.Platform.PlayerAPI._state?.item?.name) {
-            this.client.socket?.emit("changedSong", Spicetify.Player.data.track?.uri, Spicetify.Platform.PlayerAPI._state?.item?.name, Spicetify.Platform.PlayerAPI._state?.item?.images[0]['url'])
-            clearInterval(interval)
-          }
-        }, 100)
-      } else {
-        this.client.socket?.emit("changedSong", Spicetify.Player.data.track?.uri)
-      }
-      
-      if (Spicetify.Player.isPlaying())
-        this.patcher.OGPlayerAPI.pause()
-      this.patcher.OGPlayerAPI.seekTo(0)
     }
   }
 
   onLogin() {
     if (Spicetify.Player.isPlaying())
       this.patcher.OGPlayerAPI.pause()
+    
+    if (!this.sendIsWatchingAd())
+      this.client.socket?.emit("requestSyncSong")
   }
 }

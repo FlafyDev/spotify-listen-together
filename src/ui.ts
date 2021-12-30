@@ -2,7 +2,8 @@ import LTPlayer from './ltPlayer'
 
 interface IMenuItems {
   joinServer?: Spicetify.Menu.Item,
-  requestHost?: Spicetify.Menu.Item
+  requestHost?: Spicetify.Menu.Item,
+  test?: Spicetify.Menu.Item
 }
 
 export default class UI {
@@ -36,6 +37,18 @@ export default class UI {
           alert("Please connect to a server.")
         }
     
+      }),
+      test: new Spicetify.Menu.Item("Debug", false, () => {
+        switch (window.prompt("code")) {
+          case "1": {
+            this.ltPlayer.client.socket?.emit("watchingAD", true)
+            break;
+          }
+          case "2": {
+            this.ltPlayer.client.socket?.emit("watchingAD", false)
+            break;
+          }
+        }
       })
     }
     new Spicetify.Menu.SubMenu("Listen Together", Object.values(this.menuItems)).register();

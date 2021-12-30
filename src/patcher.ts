@@ -1,7 +1,10 @@
+import { LiteEvent } from "./liteEvent";
 import LTPlayer from "./ltPlayer"
 
 export default class Patcher {
+  private lastData: any = null
   constructor (public ltPlayer: LTPlayer) {}
+  
   OGPlayerAPI = {
     play: Spicetify.Platform.PlayerAPI.play.bind(Spicetify.Platform.PlayerAPI),
     pause: Spicetify.Platform.PlayerAPI.pause.bind(Spicetify.Platform.PlayerAPI),
@@ -11,20 +14,25 @@ export default class Patcher {
     skipToPrevious: Spicetify.Platform.PlayerAPI.skipToPrevious.bind(Spicetify.Platform.PlayerAPI),
   }
 
+  private readonly onTrackChanged = new LiteEvent<string>();
+  public get trackChanged() { return this.onTrackChanged.expose(); } 
+
   patchAll() {
+    Spicetify.Platform.PlayerAPI._cosmos.sub("sp://player/v2/main", (data: any) => {
+        if (!data) return
+        
+        if (this.lastData?.track?.uri !== data?.track?.uri) {
+          this.onTrackChanged.trigger(data?.track?.uri || "")
+        }
+
+        this.lastData = data
+      }
+    )
+
     Spicetify.Platform.PlayerAPI.play = (uri: any, origins: any, options: any) => {
       console.log(JSON.stringify([uri, origins, options]))
       this.restrictAccess(() => this.OGPlayerAPI.play(uri, origins, options), "Only the hosts can change songs!", () => {
         this.ltPlayer.spotifyUtils.forcePlay(uri, origins, options) // TODO: Add "paused" to options
-        // let track: string | undefined = uri.uri
-        // if (!track?.includes("spotify:track:")) {
-        //   track = options?.skipTo?.uri
-        // }
-        // if (track?.includes("spotify:track:")) {
-        //   this.ltPlayer.requestChangeSong(track)
-        // } else {
-        //   Spicetify.showNotification("Can't play this! Spotify Listen Together can only play songs individually as of now.")
-        // }
       })
     }
     
