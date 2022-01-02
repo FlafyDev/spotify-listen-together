@@ -34,11 +34,11 @@ export default class SpotifyUtils {
   
   loadedInterval: NodeJS.Timer | null = null
   
-  onTrackInfoLoaded(trackUri: string, callback: () => void) {
+  onTrackLoaded(trackUri: string, callback: () => void) {
     if (this.loadedInterval) clearInterval(this.loadedInterval);
 
     this.loadedInterval = setInterval(() => {
-      if (this.getCurrentTrackUri() === trackUri && Spicetify.Platform.PlayerAPI._state?.item?.name) {
+      if (this.getCurrentTrackUri() === trackUri && Spicetify.Platform.PlayerAPI._state?.item?.name && !Spicetify.Platform.PlayerAPI._state.isBuffering) {
         callback()
         if (this.loadedInterval) clearInterval(this.loadedInterval)
       }

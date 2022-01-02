@@ -1,7 +1,7 @@
 import Client from "./client";
 import Patcher from "./patcher";
 import SettingsManager from "./settings";
-import UI from "./ui";
+import UI from "./ui/ui";
 import pjson from '../package.json';
 import SpotifyUtils from "./spotifyUtils";
 
@@ -22,14 +22,10 @@ export default class LTPlayer {
     });
 
     // DEV
-    (<any>Spicetify).OGPlayerAPI = this.patcher.OGPlayerAPI
-  }
-
-  // Send
-  sendIsWatchingAd() {
-    const isWatchingAd = this.spotifyUtils.isAd(this.spotifyUtils.getCurrentTrackUri())
-    this.client.socket?.emit("watchingAD", isWatchingAd)
-    return isWatchingAd;
+    (<any>Spicetify).OGPlayerAPI = this.patcher.OGPlayerAPI;
+    (<any>Spicetify).test1 = () => {
+      this.client.socket?.emit("changedSong", "spotify:ad:heheheha")
+    }
   }
 
   requestChangeSong(trackUri: string) {
@@ -68,27 +64,19 @@ export default class LTPlayer {
     }
   }
 
-  onSyncSong(trackUri: string, paused: boolean, milliseconds: number) {
-    if (trackUri !== this.spotifyUtils.getCurrentTrackUri()) {
-      this.spotifyUtils.forcePlayTrack(trackUri)
-    }
-    this.spotifyUtils.onTrackInfoLoaded(trackUri, () => this.onUpdateSong(paused, milliseconds))
-  }
-
   // Events
   onSongChanged(trackUri?: string) {
     if (trackUri === undefined) trackUri = this.spotifyUtils.getCurrentTrackUri()
     
     if (this.client.connected) {
       if (this.spotifyUtils.isValidTrack(trackUri)) {
-        this.spotifyUtils.onTrackInfoLoaded(trackUri!, () => {
+        this.spotifyUtils.onTrackLoaded(trackUri!, () => {
           if (Spicetify.Player.isPlaying()) this.patcher.OGPlayerAPI.pause()
           this.patcher.OGPlayerAPI.seekTo(0)
           this.client.socket?.emit("changedSong", trackUri, Spicetify.Platform.PlayerAPI._state?.item?.name, Spicetify.Platform.PlayerAPI._state?.item?.images[0]['url'])
         })
       } else {
         this.client.socket?.emit("changedSong", trackUri)
-        this.sendIsWatchingAd()
       }
     }
   }
@@ -96,8 +84,7 @@ export default class LTPlayer {
   onLogin() {
     if (Spicetify.Player.isPlaying())
       this.patcher.OGPlayerAPI.pause()
-    
-    if (!this.sendIsWatchingAd())
-      this.client.socket?.emit("requestSyncSong")
+
+    this.ui.bottomMessage("Connected to the server.")
   }
 }

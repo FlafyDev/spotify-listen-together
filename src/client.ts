@@ -9,16 +9,12 @@ export default class Client {
   constructor (public ltPlayer: LTPlayer) {
   }
   
-  connect(server: string) {
-    // DEV
-    (<any>Spicetify).test1 = () => {
-      this.socket?.emit("watchingAD", true)
-    }
-    (<any>Spicetify).test2 = () => {
-      this.socket?.emit("watchingAD", false)
-    }
+  connect(server?: string) {
+    if (!server)
+      server = this.ltPlayer.settingsManager.settings.server
 
     this.connecting = true;
+    this.ltPlayer.ui.renderBottomInfo(server!, [], true)
     this.ltPlayer.ui.menuItems.joinServer?.setName("Leave the server")
     
     this.socket = io(server, {
@@ -26,20 +22,15 @@ export default class Client {
     })
   
     this.socket.on("connect", () => {
+      this.ltPlayer.ui.renderBottomInfo(server!, [])
       this.connecting = false
       this.connected = true
       this.ltPlayer.isHost = false
-      let name = prompt("Enter your name:", this.ltPlayer.settingsManager.settings.name)
-      if (name === null || name.length === 0) {
-        name = "Unnamed"
-      }
-      this.socket!.emit("login", name, this.ltPlayer.version, (versionRequirements: string) => {
+      this.socket!.emit("login", this.ltPlayer.settingsManager.settings.name, this.ltPlayer.version, (versionRequirements: string) => {
         this.socket?.disconnect()
-        setTimeout(() => alert(`Your Spotify Listen Together's version isn't compatible with the server's version. Consider switching to a version that meets these requirements: "${versionRequirements}".`), 1)
+        setTimeout(() => this.ltPlayer.ui.windowMessage(`Your Spotify Listen Together's version isn't compatible with the server's version. Consider switching to a version that meets these requirements: "${versionRequirements}".`), 1)
       })
       this.ltPlayer.onLogin()
-      this.ltPlayer.settingsManager.settings.name = name
-      this.ltPlayer.settingsManager.saveSettings()
     })
 
     this.socket.onAny((ev: string, ...args: any) => {
@@ -50,26 +41,26 @@ export default class Client {
 
     this.socket.on("updateSong", (pause: boolean, milliseconds: number) => this.ltPlayer.onUpdateSong(pause, milliseconds))
 
-    this.socket.on("syncSong", (trackUri: string, paused: boolean, milliseconds: number) => this.ltPlayer.onSyncSong(trackUri, paused, milliseconds))
-
-    this.socket.on("showMessage", (message: string, info: boolean) => {
-      if (info) {
-        Spicetify.showNotification(message)
-      } else {
-        alert(message)
-      }
+    this.socket.on("bottomMessage", (message: string) => {
+      this.ltPlayer.ui.bottomMessage(message)
     })
+
+    this.socket.on("windowMessage", (message: string) => {
+      this.ltPlayer.ui.windowMessage(message)
+    })
+
+    this.socket.on("listeners", (clients: string[]) => this.ltPlayer.ui.renderBottomInfo(server!, clients))
 
     this.socket.on("isHost", (isHost: boolean) => {
       if (isHost != this.ltPlayer.isHost) {
         this.ltPlayer.isHost = isHost
         if (isHost) {
           this.ltPlayer.ui.menuItems.requestHost?.setName("Cancel hosting");
-          alert("You are now a host.")
+          this.ltPlayer.ui.bottomMessage("You are now a host.")
           this.ltPlayer.onSongChanged()
         } else {
           this.ltPlayer.ui.menuItems.requestHost?.setName("Request host");
-          alert("You are no longer a host.")
+          this.ltPlayer.ui.bottomMessage("You are no longer a host.")
         }
       }
     })
@@ -78,7 +69,7 @@ export default class Client {
 
     this.socket.on("error", () => {
       this.disconnect()
-      alert(`Couldn't connect to "${server}".`)
+      this.ltPlayer.ui.windowMessage(`Couldn't connect to "${server}".`)
     })
   }
   
@@ -90,5 +81,7 @@ export default class Client {
     this.connecting = false
     this.ltPlayer.ui.menuItems.joinServer?.setName("Join a server")
     this.ltPlayer.ui.menuItems.requestHost?.setName("Request host");
+    this.ltPlayer.ui.renderBottomInfo("")
+    this.ltPlayer.ui.disconnectedPopup()
   }
 }

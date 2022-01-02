@@ -32,8 +32,8 @@ Example of the website:
 
 ## TODOs (For both the client and the server)
 - Show if a listener is the host/is watching an AD (on the website).
-- Wait if a listener is watching an AD.
-- Handle listeners who joined while a song was playing.
+- DONE (not tested) | Wait if a listener is watching an AD.
+- DONE (not tested) | Handle listeners who joined while a song was playing.
 - Correct the current song's time evey few seconds.
 - Ping server every few minutes (In case it's Heroku or something so it won't close).
 - Have some sort of visuallizer inside Spotify which shows who's listening with you and if you're connected to a server.
