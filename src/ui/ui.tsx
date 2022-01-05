@@ -3,71 +3,60 @@ import { renderToStaticMarkup } from "react-dom/server"
 import LTPlayer from '../ltPlayer'
 import BottomInfo from './bottomInfo';
 import { Popup } from './popup';
+import iconSvg from './ListenTogetherIconSimplified'
 
-interface IMenuItems {
-  joinServer?: Spicetify.Menu.Item,
-  requestHost?: Spicetify.Menu.Item,
-  test?: Spicetify.Menu.Item
-}
+const css = require('../public/ui.css')
 
 export default class UI {
-  menuItems: IMenuItems
   bottomInfoContainer: Element | null = null
 
   constructor(public ltPlayer: LTPlayer) {
-    this.menuItems = {
-      joinServer: new Spicetify.Menu.Item("Join a server", false, () => {
-        if (ltPlayer.client.connected || ltPlayer.client.connecting) {
-          ltPlayer.client.disconnect()
-        } else {
-          this.joinServerPopup((address, name) => {
-            if (!!address && !!name) {
-              ltPlayer.settingsManager.settings.server = address
-              ltPlayer.settingsManager.settings.name = name
-              ltPlayer.settingsManager.saveSettings()
-              ltPlayer.client.connect()
-            }
-          })
-        }
-      }),
-      requestHost: new Spicetify.Menu.Item("Request host", false, () => {
-        if (ltPlayer.client.connected) {
-          if (this.ltPlayer.isHost) {
-            this.ltPlayer.client.socket?.emit("cancelHost")
-          } else {
-            this.requestHostPopup((password) => {
-              if (!!password) {
-                ltPlayer.client.socket?.emit("requestHost", password)
-              }
-            })
-          }
-        } else {
-          this.windowMessage("Please connect to a server before requesting host.")
-        }
-    
-      }),
-      test: new Spicetify.Menu.Item("Debug", false, () => {
-        switch (window.prompt("code")) {
-          case "1": {
+    // this.menuItems = {
+    //   joinServer: new Spicetify.Menu.Item("Join a server", false, () => {
+    //   }),
+    //   requestHost: new Spicetify.Menu.Item("Request host", false, () => {
+    //   }),
+    //   test: new Spicetify.Menu.Item("Debug", false, () => {
+    //     switch (window.prompt("code")) {
+    //       case "1": {
+    //         this.openMenu()
 
+    //         break;
+    //       }
+    //       case "2": {
+    //         break;
+    //       }
+    //     }
+    //   })
+    // }
+    // new Spicetify.Menu.SubMenu("Listen Together", Object.values(this.menuItems)).register();
 
-            break;
-          }
-          case "2": {
-            break;
-          }
-        }
-      })
-    }
-    new Spicetify.Menu.SubMenu("Listen Together", Object.values(this.menuItems)).register();
+    new Spicetify.Topbar.Button("Listen Together", iconSvg, () => this.openMenu())
     
-    const playingBar = document.getElementsByClassName("main-nowPlayingBar-nowPlayingBar").item(0)
-    if (playingBar) {
-      this.bottomInfoContainer = document.createElement("div")
-      this.bottomInfoContainer.id = "listenTogether-bottomInfo"
-      playingBar.appendChild(this.bottomInfoContainer)
-      this.renderBottomInfo("")
-    }
+    let loop = setInterval(() => {
+      let playingBar = document.getElementsByClassName("main-nowPlayingBar-nowPlayingBar").item(0)
+      if (playingBar) {
+        clearInterval(loop)
+        this.bottomInfoContainer = document.createElement("div")
+        this.bottomInfoContainer.id = "listenTogether-bottomInfo"
+        playingBar.appendChild(this.bottomInfoContainer)
+        this.renderBottomInfo(<BottomInfo server=""/>)
+      }
+    }, 100)
+  }
+
+  songRequestPopup(trackName: string, fromListener: string, permitted: () => void) {
+    Popup.create("Listen Together", (btn) => { if (btn === "Play") permitted()}, ["Play"], [
+      <Popup.Text text={`${fromListener} wants to play "${trackName}".`} />
+    ])
+  }
+
+  openMenu() {
+    Popup.create("Listen Together", () => {}, [], [
+      <Popup.Button text={(this.ltPlayer.client.connected || this.ltPlayer.client.connecting) ? "Leave the server" : "Join a server"} onClick={() => this.onClickJoinAServer()}/>,
+      <Popup.Button text={(this.ltPlayer.isHost ? "Stop hosting" : "Request host")} onClick={() => this.onClickRequestHost()} disabled={!this.ltPlayer.client.connected}/>,
+      <Popup.Button text={"Github"} onClick={() => window.location.href="https://github.com/FlafyDev/spotify-listen-together"} />,
+    ])
   }
 
   windowMessage(message: string) {
@@ -85,9 +74,41 @@ export default class UI {
       if (btn === "Reconnect") {
         this.ltPlayer.client.connect()
       }
-    }, ["Close", "Reconnect"], [
+    }, ["Reconnect"], [
       <Popup.Text text={"Disconnected from the server."}/>
     ])
+  }
+
+  private onClickJoinAServer() {
+    if (this.ltPlayer.client.connected || this.ltPlayer.client.connecting) {
+      this.ltPlayer.client.disconnect()
+    } else {
+      this.joinServerPopup((address, name) => {
+        if (!!address && !!name) {
+          this.ltPlayer.settingsManager.settings.server = address
+          this.ltPlayer.settingsManager.settings.name = name
+          this.ltPlayer.settingsManager.saveSettings()
+          this.ltPlayer.client.connect()
+        }
+      })
+    }
+  }
+
+  private onClickRequestHost() {
+    if (this.ltPlayer.client.connected) {
+      if (this.ltPlayer.isHost) {
+        this.ltPlayer.client.socket?.emit("cancelHost")
+        Popup.close()
+      } else {
+        this.requestHostPopup((password) => {
+          if (!!password) {
+            this.ltPlayer.client.socket?.emit("requestHost", password)
+          }
+        })
+      }
+    } else {
+      this.windowMessage("Please connect to a server before requesting host.")
+    }
   }
 
   private joinServerPopup(callback: (address: string, name: string) => void) {
@@ -111,9 +132,9 @@ export default class UI {
     ])
   }
 
-  renderBottomInfo(server: string, listeners: string[] = [], loading: boolean = false) {
+  renderBottomInfo(bottomInfo: JSX.Element) {
     if (this.bottomInfoContainer) {
-      this.bottomInfoContainer.innerHTML = renderToStaticMarkup(<BottomInfo server={server} listeners={listeners} loading={loading}/>)
+      this.bottomInfoContainer.innerHTML = renderToStaticMarkup(bottomInfo)
     }
   }
 }

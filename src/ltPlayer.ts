@@ -1,9 +1,10 @@
 import Client from "./client";
-import Patcher from "./patcher";
+import Patcher, { OGFunctions } from "./patcher";
 import SettingsManager from "./settings";
 import UI from "./ui/ui";
-import pjson from '../package.json';
-import SpotifyUtils from "./spotifyUtils";
+import pJson from '../package.json';
+import "./spotifyUtils";
+import { forcePlayTrack, getCurrentTrackUri, getTrackData, getTrackType, isListenableTrackType, isTrackPaused, pauseTrack, resumeTrack, SpotifyUtils, TrackType } from "./spotifyUtils";
 
 export default class LTPlayer {
   client = new Client(this)
@@ -12,8 +13,10 @@ export default class LTPlayer {
   settingsManager = new SettingsManager()
   ui = new UI(this)
   isHost = false
-  version = pjson.version
+  version = pJson.version
   watchingAd = false;
+  canChangeVolume = true;
+  lastVolume = 0;
 
   constructor() {
     this.patcher.patchAll()
@@ -22,7 +25,7 @@ export default class LTPlayer {
     });
 
     // DEV
-    (<any>Spicetify).OGPlayerAPI = this.patcher.OGPlayerAPI;
+    (<any>Spicetify).OGFunctions = OGFunctions;
     (<any>Spicetify).test1 = () => {
       this.client.socket?.emit("changedSong", "spotify:ad:heheheha")
     }
@@ -33,47 +36,65 @@ export default class LTPlayer {
   }
 
   requestUpdateSong(paused: boolean, milliseconds: number) {
-    if (this.spotifyUtils.isValidTrack(this.spotifyUtils.getCurrentTrackUri()))
+    let trackType = getTrackType()
+    
+    if (isListenableTrackType(trackType))
       this.client.socket?.emit("requestUpdateSong", paused, milliseconds)
     else
-      this.onUpdateSong(paused, milliseconds)
+      this.onUpdateSong(paused, trackType === TrackType.Ad ? undefined : milliseconds)
+  }
+
+  async requestSong(trackUri: string) {
+    let data = await getTrackData(trackUri)
+    if (data && data.error === undefined) {
+      this.client.socket?.emit("requestSong", trackUri, data.name || "UNKNOWN NAME")
+    }
   }
 
   // Received
   onChangeSong(trackUri: string) {
-    if (!this.spotifyUtils.isAd(this.spotifyUtils.getCurrentTrackUri())) {
-      if (Spicetify.Player.data.track?.uri === trackUri) {
-        this.client.socket?.emit("changedSong", Spicetify.Player.data.track?.uri)
-      } else {
-        this.spotifyUtils.forcePlayTrack(trackUri)
-      }
+    const currentTrack = getCurrentTrackUri()
+    if (currentTrack === trackUri) {
+      this.client.socket?.emit("changedSong", currentTrack)
+    } else {
+      forcePlayTrack(trackUri)
     }
   }
 
   onUpdateSong(pause: boolean, milliseconds?: number) {
-    if (this.spotifyUtils.isOnValidTrack()) {
-      if (milliseconds != undefined)
-        this.patcher.OGPlayerAPI.seekTo(milliseconds)
-      if (this.spotifyUtils.isPaused() !== pause) {
-        if (pause) {
-          this.patcher.OGPlayerAPI.pause()
-        } else {
-          this.patcher.OGPlayerAPI.resume()
-        }
-      }
+    if (milliseconds != undefined)
+      OGFunctions.seekTo(milliseconds)
+
+    if (pause) {
+      pauseTrack()
+    } else {
+      resumeTrack()
     }
   }
 
   // Events
   onSongChanged(trackUri?: string) {
-    if (trackUri === undefined) trackUri = this.spotifyUtils.getCurrentTrackUri()
+    if (trackUri === undefined) trackUri = getCurrentTrackUri()
     
     if (this.client.connected) {
-      if (this.spotifyUtils.isValidTrack(trackUri)) {
+      if (isListenableTrackType(getTrackType(trackUri))) {
+
+        // Lower volume to 0
+        this.canChangeVolume = false;
+        if (Spicetify.Player.getVolume() != 0)
+          this.lastVolume = Spicetify.Player.getVolume()
+        OGFunctions.setVolume(0);
+
         this.spotifyUtils.onTrackLoaded(trackUri!, () => {
-          if (Spicetify.Player.isPlaying()) this.patcher.OGPlayerAPI.pause()
-          this.patcher.OGPlayerAPI.seekTo(0)
+          pauseTrack()
+          OGFunctions.seekTo(0)
           this.client.socket?.emit("changedSong", trackUri, Spicetify.Platform.PlayerAPI._state?.item?.name, Spicetify.Platform.PlayerAPI._state?.item?.images[0]['url'])
+          
+          // Change volume back to normal
+          setTimeout(() => {
+            OGFunctions.setVolume(this.lastVolume);
+            this.canChangeVolume = true;
+          }, 500)
         })
       } else {
         this.client.socket?.emit("changedSong", trackUri)
@@ -82,9 +103,9 @@ export default class LTPlayer {
   }
 
   onLogin() {
-    if (Spicetify.Player.isPlaying())
-      this.patcher.OGPlayerAPI.pause()
-
+    pauseTrack()
+    this.canChangeVolume = true;
+    this.lastVolume = Spicetify.Player.getVolume();
     this.ui.bottomMessage("Connected to the server.")
   }
 }

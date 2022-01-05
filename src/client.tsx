@@ -1,5 +1,8 @@
 import { io, Socket } from "socket.io-client";
 import LTPlayer from "./ltPlayer";
+import React from 'react';
+import BottomInfo from './ui/bottomInfo';
+import { forcePlayTrack, getTrackType, isListenableTrackType } from "./spotifyUtils";
 
 export default class Client {
   connecting = false
@@ -12,17 +15,18 @@ export default class Client {
   connect(server?: string) {
     if (!server)
       server = this.ltPlayer.settingsManager.settings.server
-
+    
     this.connecting = true;
-    this.ltPlayer.ui.renderBottomInfo(server!, [], true)
-    this.ltPlayer.ui.menuItems.joinServer?.setName("Leave the server")
+    this.ltPlayer.ui.renderBottomInfo(<BottomInfo server={server} loading={true} />)
+    // this.ltPlayer.ui.menuItems.joinServer?.setName("Leave the server")
     
     this.socket = io(server, {
       'secure':true,
     })
   
     this.socket.on("connect", () => {
-      this.ltPlayer.ui.renderBottomInfo(server!, [])
+      forcePlayTrack("")
+      this.ltPlayer.ui.renderBottomInfo(<BottomInfo server={server!} />)
       this.connecting = false
       this.connected = true
       this.ltPlayer.isHost = false
@@ -37,9 +41,15 @@ export default class Client {
       console.log(`Receiving ${ev}: ${args}`)
     })
 
-    this.socket.on("changeSong", (trackUri: string) => this.ltPlayer.onChangeSong(trackUri))
+    this.socket.on("changeSong", (trackUri: string) => {
+      if (isListenableTrackType(getTrackType(trackUri)))
+        this.ltPlayer.onChangeSong(trackUri)
+    })
 
-    this.socket.on("updateSong", (pause: boolean, milliseconds: number) => this.ltPlayer.onUpdateSong(pause, milliseconds))
+    this.socket.on("updateSong", (pause: boolean, milliseconds: number) => {
+      if (isListenableTrackType())
+        this.ltPlayer.onUpdateSong(pause, milliseconds)
+    })
 
     this.socket.on("bottomMessage", (message: string) => {
       this.ltPlayer.ui.bottomMessage(message)
@@ -49,20 +59,27 @@ export default class Client {
       this.ltPlayer.ui.windowMessage(message)
     })
 
-    this.socket.on("listeners", (clients: string[]) => this.ltPlayer.ui.renderBottomInfo(server!, clients))
+    this.socket.on("listeners", (clients: string[], hostIndex: number) => {
+      this.ltPlayer.ui.renderBottomInfo(<BottomInfo server={server!} listeners={clients} hostIndex={hostIndex} />)
+    })
 
     this.socket.on("isHost", (isHost: boolean) => {
       if (isHost != this.ltPlayer.isHost) {
         this.ltPlayer.isHost = isHost
         if (isHost) {
-          this.ltPlayer.ui.menuItems.requestHost?.setName("Cancel hosting");
+          // this.ltPlayer.ui.menuItems.requestHost?.setName("Cancel hosting");
           this.ltPlayer.ui.bottomMessage("You are now a host.")
-          this.ltPlayer.onSongChanged()
         } else {
-          this.ltPlayer.ui.menuItems.requestHost?.setName("Request host");
+          // this.ltPlayer.ui.menuItems.requestHost?.setName("Request host");
           this.ltPlayer.ui.bottomMessage("You are no longer a host.")
         }
       }
+    })
+
+    this.socket.on("songRequested", (trackUri: string, trackName: string, fromListener: string) => {
+      this.ltPlayer.ui.songRequestPopup(trackName, fromListener, () => {
+        forcePlayTrack(trackUri)
+      })
     })
   
     this.socket.on("disconnect", () => this.disconnect())
@@ -79,9 +96,9 @@ export default class Client {
     this.connected = false
     this.ltPlayer.isHost = false
     this.connecting = false
-    this.ltPlayer.ui.menuItems.joinServer?.setName("Join a server")
-    this.ltPlayer.ui.menuItems.requestHost?.setName("Request host");
-    this.ltPlayer.ui.renderBottomInfo("")
+    // this.ltPlayer.ui.menuItems.joinServer?.setName("Join a server")
+    // this.ltPlayer.ui.menuItems.requestHost?.setName("Request host");
+    this.ltPlayer.ui.renderBottomInfo(<BottomInfo server={""}/>)
     this.ltPlayer.ui.disconnectedPopup()
   }
 }

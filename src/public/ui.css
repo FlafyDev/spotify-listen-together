@@ -1,0 +1,45 @@
+.lt-popup-button:enabled:active, .lt-popup-button:enabled:hover {
+  background-color:rgba(255,255,255,.1);
+  color:#fff;
+  text-decoration:none
+}
+
+.lt-popup-button:disabled {
+  color:rgba(255,255,255,.5)
+}
+
+.lt-popup-button {
+  background:transparent;
+  border:0;
+  border-radius:2px;
+  cursor:default;
+  text-decoration:none;
+
+  -webkit-padding-end:8px;
+  -webkit-box-pack:justify;
+  -ms-flex-pack:justify;
+  -webkit-box-align:center;
+  -ms-flex-align:center;
+  align-items:center;
+  color:rgba(255,255,255,.9);
+  display:-webkit-box;
+  display:-ms-flexbox;
+  display:flex;
+  gap:8px;
+  height:40px;
+  justify-content:space-between;
+  padding:12px;
+  padding-inline-end:8px;
+  position:relative;
+  text-align:start;
+  -webkit-user-select:none;
+  -moz-user-select:none;
+  -ms-user-select:none;
+  user-select:none;
+  width:100%;
+}
+
+.lt-popup-text {
+  font-size: 16px;
+  overflow-y: visible;
+}

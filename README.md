@@ -36,7 +36,7 @@ Example of the website:
 - DONE (not tested) | Handle listeners who joined while a song was playing.
 - Correct the current song's time evey few seconds.
 - Ping server every few minutes (In case it's Heroku or something so it won't close).
-- Have some sort of visuallizer inside Spotify which shows who's listening with you and if you're connected to a server.
+- DONE (not tested) | Have some sort of visuallizer inside Spotify which shows who's listening with you and if you're connected to a server.
 - Change "server" to "room". Have multiple rooms per server.
 - Send song requests to the host.
 - Notify the host when a song he played has been liked by one of the listeners. 

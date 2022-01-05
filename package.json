@@ -1,8 +1,8 @@
 {
   "name": "spotify-listen-together",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "scripts": {
-    "build": "tsc && browserify dist/src/index.js -o dist/src/bundle.js",
+    "build": "rm -rf ./dist && tsc && cp ./src/public ./dist/src/ -r && browserify -t browserify-css dist/src/index.js -o dist/src/bundle.js",
     "pushSpotify": "./scripts/pushSpotify.sh",
     "openMultiSpotify": "./scripts/openMultiSpotify.sh"
   },
@@ -19,6 +19,7 @@
     "@types/react": "^17.0.38",
     "@types/react-dom": "^17.0.11",
     "browserify": "^17.0.0",
+    "browserify-css": "^0.15.0",
     "json": "^11.0.0",
     "nodemon": "^2.0.15",
     "ts-node": "^10.4.0",
