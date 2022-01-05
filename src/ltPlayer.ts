@@ -24,11 +24,14 @@ export default class LTPlayer {
       this.onSongChanged(trackUri!)
     });
 
+    setInterval(() => {
+      if (this.client.connected && getTrackType() === TrackType.Ad) {
+        resumeTrack()
+      }
+    }, 2000);
+
     // DEV
     (<any>Spicetify).OGFunctions = OGFunctions;
-    (<any>Spicetify).test1 = () => {
-      this.client.socket?.emit("changedSong", "spotify:ad:heheheha")
-    }
   }
 
   requestChangeSong(trackUri: string) {
