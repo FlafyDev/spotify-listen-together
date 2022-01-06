@@ -4,6 +4,7 @@ import LTPlayer from '../ltPlayer'
 import BottomInfo from './bottomInfo';
 import { Popup } from './popup';
 import iconSvg from './ListenTogetherIconSimplified'
+import pJson from '../../package.json';
 
 const css = require('../public/ui.css')
 
@@ -55,7 +56,7 @@ export default class UI {
     Popup.create("Listen Together", () => {}, [], [
       <Popup.Button text={(this.ltPlayer.client.connected || this.ltPlayer.client.connecting) ? "Leave the server" : "Join a server"} onClick={() => this.onClickJoinAServer()}/>,
       <Popup.Button text={(this.ltPlayer.isHost ? "Stop hosting" : "Request host")} onClick={() => this.onClickRequestHost()} disabled={!this.ltPlayer.client.connected}/>,
-      <Popup.Button text={"Github"} onClick={() => window.location.href="https://github.com/FlafyDev/spotify-listen-together"} />,
+      <Popup.Button text={"About"} onClick={() => this.onClickAbout() } />,
     ])
   }
 
@@ -109,6 +110,15 @@ export default class UI {
     } else {
       this.windowMessage("Please connect to a server before requesting host.")
     }
+  }
+
+  private onClickAbout() {
+    Popup.create("Listen Together", () => {}, [], [
+      <Popup.Text text={
+`Listen Together v${pJson.version} created by FlafyDev`
+} centered={false} />,
+      <Popup.Button text={"Github"} onClick={() => window.location.href="https://github.com/FlafyDev/spotify-listen-together"} />,
+    ])
   }
 
   private joinServerPopup(callback: (address: string, name: string) => void) {

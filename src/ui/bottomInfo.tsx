@@ -13,7 +13,7 @@ const styles = {
   }
 }
 
-export default function BottomInfo(props: {server: string, listeners?: string[], loading?: boolean, hostIndex?: number}) {
+export default function BottomInfo(props: {server: string, listeners?: [{name: string, isHost: boolean, watchingAD: boolean}], loading?: boolean}) {
   return <div style={styles.textContainer}>
     {
       !!props.server ? <>
@@ -21,8 +21,20 @@ export default function BottomInfo(props: {server: string, listeners?: string[],
 
         {props.loading ? <></> : <span style={{maxHeight: '22px', overflow: 'hidden', maxWidth: '50%'}}>{`Listeners: `} {
           props.listeners ? props.listeners.map((listener, i) => {
-            let color = props.hostIndex === i ? "orange" : ""
-            return <span key={i} style={{color: color}}>{listener + (i !== props.listeners!.length-1 ? ", " : "")}</span>
+            let color = ""
+            let title = "Listener"
+            if (listener.isHost && listener.watchingAD) {
+              color = "Gold"; 
+              title = "Host and watching an AD"
+            } else if (listener.watchingAD) {
+              color = "LimeGreen";
+              title = "Watching an AD";
+            } else if (listener.isHost) {
+              color = "Orange";
+              title = "Host";
+            }
+
+            return <span key={i} title={title} style={{color: color}}>{listener.name + (i !== props.listeners!.length-1 ? ", " : "")}</span>
           }) : ""
         }
         </span>}

@@ -8,6 +8,7 @@ export default class Client {
   connecting = false
   connected = false
   socket: Socket | null = null
+  server = ""
 
   constructor (public ltPlayer: LTPlayer) {
   }
@@ -16,6 +17,8 @@ export default class Client {
     if (!server)
       server = this.ltPlayer.settingsManager.settings.server
     
+    this.server = server;
+
     this.connecting = true;
     this.ltPlayer.ui.renderBottomInfo(<BottomInfo server={server} loading={true} />)
     // this.ltPlayer.ui.menuItems.joinServer?.setName("Leave the server")
@@ -23,7 +26,7 @@ export default class Client {
     this.socket = io(server, {
       'secure':true,
     })
-  
+
     this.socket.on("connect", () => {
       forcePlayTrack("")
       this.ltPlayer.ui.renderBottomInfo(<BottomInfo server={server!} />)
@@ -59,8 +62,8 @@ export default class Client {
       this.ltPlayer.ui.windowMessage(message)
     })
 
-    this.socket.on("listeners", (clients: string[], hostIndex: number) => {
-      this.ltPlayer.ui.renderBottomInfo(<BottomInfo server={server!} listeners={clients} hostIndex={hostIndex} />)
+    this.socket.on("listeners", (clients: any) => {
+      this.ltPlayer.ui.renderBottomInfo(<BottomInfo server={server!} listeners={clients} />)
     })
 
     this.socket.on("isHost", (isHost: boolean) => {
