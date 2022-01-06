@@ -30,12 +30,6 @@ export default class LTPlayer {
       }
     }, 2000);
 
-    setInterval(async () => {
-      if (this.client.connected) {
-        await fetch('this.client.server')
-      }
-    }, 5*60_000);
-
     // For testing
     (<any>Spicetify).OGFunctions = OGFunctions;
   }

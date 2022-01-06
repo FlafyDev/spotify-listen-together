@@ -11,6 +11,13 @@ export default class Client {
   server = ""
 
   constructor (public ltPlayer: LTPlayer) {
+    setInterval(async () => {
+      if (this.connected) {
+        try {
+          await fetch(this.server)
+        } catch {}
+      }
+    }, 5*60_000);
   }
   
   connect(server?: string) {
