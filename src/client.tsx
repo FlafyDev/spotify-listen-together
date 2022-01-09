@@ -2,7 +2,7 @@ import { io, Socket } from "socket.io-client";
 import LTPlayer from "./ltPlayer";
 import React from 'react';
 import BottomInfo from './ui/bottomInfo';
-import { forcePlayTrack, getTrackType, isListenableTrackType } from "./spotifyUtils";
+import { forcePlayTrack, getCurrentTrackUri, getTrackType, isListenableTrackType } from "./spotifyUtils";
 
 export default class Client {
   connecting = false
@@ -23,7 +23,13 @@ export default class Client {
   connect(server?: string) {
     if (!server)
       server = this.ltPlayer.settingsManager.settings.server
-    
+
+    if (getCurrentTrackUri() != "") {
+      forcePlayTrack("")
+      setTimeout(() => this.connect(server), 100)
+      return;
+    }
+
     this.server = server;
 
     this.connecting = true;
@@ -35,7 +41,6 @@ export default class Client {
     })
 
     this.socket.on("connect", () => {
-      forcePlayTrack("")
       this.ltPlayer.ui.renderBottomInfo(<BottomInfo server={server!} />)
       this.connecting = false
       this.connected = true

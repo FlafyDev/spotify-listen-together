@@ -74,27 +74,37 @@ export function getTrackProgress() {
 }
 
 export function forcePlayTrack(trackUri: string): void {
-  OGFunctions.play({ uri: trackUri }, {}, {ltForced: true})
+  forcePlay({ uri: trackUri }, {}, {})
 }
 
 export function forcePlay(uri: any, origins: any, options: any): void {
-  OGFunctions.play(uri, origins, {...options, ltForced: true})
+  Spicetify.Platform.PlayerAPI.play(uri, origins, {...options, ltForced: true})
 }
   
 export class SpotifyUtils {
   constructor (public ltPlayer: LTPlayer) {}
 
   loadedInterval: NodeJS.Timer | null = null
+  timeoutLoadedCallback: NodeJS.Timeout | null = null
   
   onTrackLoaded(trackUri: string, callback: () => void) {
     if (this.loadedInterval) clearInterval(this.loadedInterval);
+    if (this.timeoutLoadedCallback) clearTimeout(this.timeoutLoadedCallback)
 
     this.loadedInterval = setInterval(() => {
+      console.log(`check loaded: ${getCurrentTrackUri()}===${trackUri}   ${Spicetify.Platform.PlayerAPI._state?.item?.name}  ${!Spicetify.Platform.PlayerAPI._state.isBuffering}`)
       if (getCurrentTrackUri() === trackUri && Spicetify.Platform.PlayerAPI._state?.item?.name && !Spicetify.Platform.PlayerAPI._state.isBuffering) {
-        setTimeout(() => callback(), 1000)
         if (this.loadedInterval) clearInterval(this.loadedInterval)
+        if (this.timeoutLoadedCallback) clearTimeout(this.timeoutLoadedCallback)
+        callback()
       }
     }, 100)
+
+    this.timeoutLoadedCallback = setTimeout(() => {
+      if (this.timeoutLoadedCallback) clearTimeout(this.timeoutLoadedCallback)
+      if (this.loadedInterval) clearInterval(this.loadedInterval)
+      callback()
+    }, 5000);
 
     return this.loadedInterval;
   }

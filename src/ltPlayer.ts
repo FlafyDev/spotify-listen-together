@@ -16,7 +16,9 @@ export default class LTPlayer {
   version = pJson.version
   watchingAd = false;
   canChangeVolume = true;
-  lastVolume = 0;
+  lastVolume: number | null = null;
+  trackLoaded = true
+  currentLoadingTrack = ""
 
   constructor() {
     this.patcher.patchAll()
@@ -56,9 +58,9 @@ export default class LTPlayer {
 
   // Received
   onChangeSong(trackUri: string) {
-    const currentTrack = getCurrentTrackUri()
-    if (currentTrack === trackUri) {
-      this.client.socket?.emit("changedSong", currentTrack)
+    if (this.currentLoadingTrack === trackUri) {
+      if (this.trackLoaded)
+        this.client.socket?.emit("changedSong", this.currentLoadingTrack)
     } else {
       forcePlayTrack(trackUri)
     }
@@ -78,26 +80,26 @@ export default class LTPlayer {
   // Events
   onSongChanged(trackUri?: string) {
     if (trackUri === undefined) trackUri = getCurrentTrackUri()
-    
+
+    console.log(`Changed track to ${trackUri}`)
+    this.currentLoadingTrack = trackUri;
+    console.trace()
+
     if (this.client.connected) {
       if (isListenableTrackType(getTrackType(trackUri))) {
-
-        // Lower volume to 0
-        this.canChangeVolume = false;
-        if (Spicetify.Player.getVolume() != 0)
-          this.lastVolume = Spicetify.Player.getVolume()
-        OGFunctions.setVolume(0);
+        this.trackLoaded = false;
+        this.client.socket?.emit("loadingSong", trackUri)
 
         this.spotifyUtils.onTrackLoaded(trackUri!, () => {
+          this.trackLoaded = true;
           pauseTrack()
           OGFunctions.seekTo(0)
           this.client.socket?.emit("changedSong", trackUri, Spicetify.Platform.PlayerAPI._state?.item?.name, Spicetify.Platform.PlayerAPI._state?.item?.images[0]['url'])
           
           // Change volume back to normal
-          setTimeout(() => {
-            OGFunctions.setVolume(this.lastVolume);
-            this.canChangeVolume = true;
-          }, 500)
+          OGFunctions.setVolume(this.lastVolume);
+          this.lastVolume = null
+          this.canChangeVolume = true;
         })
       } else {
         this.client.socket?.emit("changedSong", trackUri)
@@ -110,5 +112,13 @@ export default class LTPlayer {
     this.canChangeVolume = true;
     this.lastVolume = Spicetify.Player.getVolume();
     this.ui.bottomMessage("Connected to the server.")
+  }
+
+  muteBeforePlay() {
+    // Lower volume to 0
+    this.canChangeVolume = false;
+    if (this.lastVolume === null)
+      this.lastVolume = Spicetify.Player.getVolume()
+    OGFunctions.setVolume(0);
   }
 }

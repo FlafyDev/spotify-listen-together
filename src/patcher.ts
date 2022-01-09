@@ -39,6 +39,7 @@ export default class Patcher {
         if (!data) return
         
         if (this.lastData?.track?.uri !== data?.track?.uri) {
+          console.log(data)
           this.onTrackChanged.trigger(data?.track?.uri || "")
         }
 
@@ -59,7 +60,7 @@ export default class Patcher {
     }
 
     Spicetify.Platform.PlayerAPI.play = (uri: any, origins: any, options: any) => {
-      // console.log(`Play: uri=${JSON.stringify(uri)}\norigins=${JSON.stringify(origins)}\noptions=${JSON.stringify(options)}`)
+      console.log(`Play: uri=${JSON.stringify(uri)}\norigins=${JSON.stringify(origins)}\noptions=${JSON.stringify(options)}`)
       this.restrictAccess(() => OGFunctions.play(uri, origins, options), ()=>{
         if (options?.repeat === undefined) { // Don't do anything if the function was executed by what plays the next song.
           Spicetify.showNotification("Only the hosts can change songs!")
@@ -71,8 +72,9 @@ export default class Patcher {
           }
         }
       }, () => {
-        forcePlay(uri, origins, options) // TODO: Add "paused" to options
-      })
+        this.ltPlayer.muteBeforePlay()
+        OGFunctions.play(uri, origins, options)
+      }, this.ltPlayer.isHost || options?.ltForced === true)
     }
     
     Spicetify.Platform.PlayerAPI.pause = () => {
@@ -112,10 +114,10 @@ export default class Patcher {
     }
   }
   
-  private restrictAccess(ogFunc: Function, restrictCallback: () => void, hostFunc?: Function) {
-    if (!this.ltPlayer.client.connected) {
+  private restrictAccess(ogFunc: Function, restrictCallback: () => void, hostFunc?: Function, access?: boolean) {
+    if (!this.ltPlayer.client.connected && !this.ltPlayer.client.connecting) {
       ogFunc()
-    } else if (this.ltPlayer.isHost) {
+    } else if ((access !== undefined && access) || (access === undefined && this.ltPlayer.isHost)) {
       if (hostFunc)
         hostFunc()
       else

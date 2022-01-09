@@ -24,7 +24,7 @@ export default function BottomInfo(props: {server: string, listeners?: [{name: s
             let color = ""
             let title = "Listener"
             if (listener.isHost && listener.watchingAD) {
-              color = "Gold"; 
+              color = "LimeGreen"; 
               title = "Host and watching an AD"
             } else if (listener.watchingAD) {
               color = "LimeGreen";
