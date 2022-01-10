@@ -112,6 +112,14 @@ export default class Patcher {
       if (!this.ltPlayer.client.connected || this.ltPlayer.canChangeVolume)
         OGFunctions.setVolume(e)
     }
+
+    Spicetify.Platform.History.listen(({pathname}: {pathname?: string}) => {
+      let pathParts = pathname?.split("/", 3).filter(i => i)
+      if ((pathParts?.length || 0) >= 2 && pathParts![0].toLowerCase() == "listentogether") {
+        this.ltPlayer.ui.joinAServerQuick(decodeURIComponent(pathParts![1]))
+        Spicetify.Platform.History.goBack()
+      }
+    })
   }
   
   private restrictAccess(ogFunc: Function, restrictCallback: () => void, hostFunc?: Function, access?: boolean) {

@@ -1,3 +1,5 @@
+// https://gist.github.com/JasonKleban/50cee44960c225ac1993c922563aa540
+
 interface ILiteEvent<T> {
   on(handler: { (data?: T): void }) : void;
   off(handler: { (data?: T): void }) : void;

@@ -12,26 +12,6 @@ export default class UI {
   bottomInfoContainer: Element | null = null
 
   constructor(public ltPlayer: LTPlayer) {
-    // this.menuItems = {
-    //   joinServer: new Spicetify.Menu.Item("Join a server", false, () => {
-    //   }),
-    //   requestHost: new Spicetify.Menu.Item("Request host", false, () => {
-    //   }),
-    //   test: new Spicetify.Menu.Item("Debug", false, () => {
-    //     switch (window.prompt("code")) {
-    //       case "1": {
-    //         this.openMenu()
-
-    //         break;
-    //       }
-    //       case "2": {
-    //         break;
-    //       }
-    //     }
-    //   })
-    // }
-    // new Spicetify.Menu.SubMenu("Listen Together", Object.values(this.menuItems)).register();
-
     new Spicetify.Topbar.Button("Listen Together", iconSvg, () => this.openMenu())
     
     let loop = setInterval(() => {
@@ -60,6 +40,8 @@ export default class UI {
     ])
   }
 
+
+
   windowMessage(message: string) {
     Popup.create("Listen Together", () => {}, ["OK"], [
       <Popup.Text text={message}/>
@@ -78,6 +60,18 @@ export default class UI {
     }, ["Reconnect"], [
       <Popup.Text text={"Disconnected from the server."}/>
     ])
+  }
+
+  joinAServerQuick(address: string) {
+    if (!this.ltPlayer.client.connected && !this.ltPlayer.client.connecting && !!address) {
+      this.ltPlayer.settingsManager.settings.server = address
+      this.ltPlayer.settingsManager.saveSettings()
+      if (!this.ltPlayer.settingsManager.settings.name) {
+        this.onClickJoinAServer()
+      } else {
+        this.ltPlayer.client.connect()
+      }
+    }
   }
 
   private onClickJoinAServer() {
