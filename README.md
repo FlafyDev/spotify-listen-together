@@ -32,9 +32,4 @@ Example of the website:
 
 ## TODOs (For both the client and the server)
 - Change "server" to "room". Have multiple rooms per server.
-- DONE (not tested) | Show if a listener is the host/is watching an AD (on the website).
-- DONE (not tested) | Ping server every few minutes (In case it's Heroku or something so it won't close).
-- DONE (not tested) | Handle listeners who joined while a song was playing.
-- DONE (not tested) | Wait if a listener is watching an AD.
-- DONE (not tested) | Have some sort of visualizer inside Spotify which shows who's listening with you and if you're connected to a server.
-- DONE (not tested) | Send song requests to the host.
+- Fix unexpected behavior when selecting the song the song that is currently playing.
