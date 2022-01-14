@@ -85,7 +85,6 @@ export namespace Popup {
     buttonNames.forEach((btnName) => {
       buttons.push(<button className='main-buttons-button main-button-secondary main-playlistEditDetailsModal-save' style={styles.button} type='button' onClick={() => {
         closed(btnName)
-        Spicetify.PopupModal.hide()
       }}>
         {btnName}
       </button>)

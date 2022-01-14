@@ -27,13 +27,13 @@ export default class UI {
   }
 
   songRequestPopup(trackName: string, fromListener: string, permitted: () => void) {
-    Popup.create("Listen Together", (btn) => { if (btn === "Play") permitted()}, ["Play"], [
+    Popup.create("Listen Together", (btn) => { if (btn === "Play") permitted(); Popup.close(); }, ["Play"], [
       <Popup.Text text={`${fromListener} wants to play "${trackName}".`} />
     ])
   }
 
   openMenu() {
-    Popup.create("Listen Together", () => {}, [], [
+    Popup.create("Listen Together", () => Popup.close(), [], [
       <Popup.Button text={(this.ltPlayer.client.connected || this.ltPlayer.client.connecting) ? "Leave the server" : "Join a server"} onClick={() => this.onClickJoinAServer()}/>,
       <Popup.Button text={(this.ltPlayer.isHost ? "Stop hosting" : "Request host")} onClick={() => this.onClickRequestHost()} disabled={!this.ltPlayer.client.connected}/>,
       <Popup.Button text={"About"} onClick={() => this.onClickAbout() } />,
@@ -43,7 +43,7 @@ export default class UI {
 
 
   windowMessage(message: string) {
-    Popup.create("Listen Together", () => {}, ["OK"], [
+    Popup.create("Listen Together", () => Popup.close(), ["OK"], [
       <Popup.Text text={message}/>
     ])
   }
@@ -57,6 +57,7 @@ export default class UI {
       if (btn === "Reconnect") {
         this.ltPlayer.client.connect()
       }
+      Popup.close()
     }, ["Reconnect"], [
       <Popup.Text text={"Disconnected from the server."}/>
     ])
@@ -78,12 +79,17 @@ export default class UI {
     if (this.ltPlayer.client.connected || this.ltPlayer.client.connecting) {
       this.ltPlayer.client.disconnect()
     } else {
-      this.joinServerPopup((address, name) => {
-        if (!!address && !!name) {
-          this.ltPlayer.settingsManager.settings.server = address
-          this.ltPlayer.settingsManager.settings.name = name
-          this.ltPlayer.settingsManager.saveSettings()
-          this.ltPlayer.client.connect()
+      this.joinServerPopup((btn, address, name) => {
+        if (btn === "Host a server") {
+          window.location.href="https://heroku.com/deploy?template=https://github.com/FlafyDev/spotify-listen-together-server"
+        } else {
+          Popup.close()
+          if (!!address && !!name) {
+            this.ltPlayer.settingsManager.settings.server = address
+            this.ltPlayer.settingsManager.settings.name = name
+            this.ltPlayer.settingsManager.saveSettings()
+            this.ltPlayer.client.connect()
+          }
         }
       })
     }
@@ -99,6 +105,7 @@ export default class UI {
           if (!!password) {
             this.ltPlayer.client.socket?.emit("requestHost", password)
           }
+          Popup.close()
         })
       }
     } else {
@@ -107,7 +114,7 @@ export default class UI {
   }
 
   private onClickAbout() {
-    Popup.create("Listen Together", () => {}, [], [
+    Popup.create("Listen Together", () => {Popup.close()}, [], [
       <Popup.Text text={
 `Listen Together v${pJson.version} created by FlafyDev`
 } centered={false} />,
@@ -115,10 +122,10 @@ export default class UI {
     ])
   }
 
-  private joinServerPopup(callback: (address: string, name: string) => void) {
+  private joinServerPopup(callback: (btn: string | null, address: string, name: string) => void) {
     let address = ""
     let name = ""
-    Popup.create("Listen Together", () => callback(address, name), ["Join"], [
+    Popup.create("Listen Together", (btn) => callback(btn, address, name), ["Join", "Host a server"], [
       <Popup.Textbox name="Server address" example="https://www.server.com/" defaultValue={this.ltPlayer.settingsManager.settings.server} onInput={(text) => {
         address = text;
       }}/>,
