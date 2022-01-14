@@ -2,7 +2,10 @@
 ### This project is still in development and testing. Please keep this in mind!
 Spotify Listen Together is an extension for [Spicetify](https://spicetify.app/) and an alternative solution to Spotify's Group Session.
 
-## Manual Installation
+## Download
+### Marketplace 
+Download [Spicetify Marketplace](https://github.com/CharlieS1103/spicetify-marketplace)
+### OR: Manual Installation
 1. Download and install [Spicetify](https://spicetify.app/docs/getting-started/installation).
 2. Download [listenTogether.js](https://raw.githubusercontent.com/FlafyDev/spotify-listen-together/main/compiled/listenTogether.js).
 3. Paste `listenTogether.js` in `%userprofile%\.spicetify\Extensions`(Find the folder `.spicetify` by doing `spicetify -c` in the CMD/Powershell).
