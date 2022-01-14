@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server"
 import LTPlayer from '../ltPlayer'
 import BottomInfo from './bottomInfo';
 import { Popup } from './popup';
-import iconSvg from './ListenTogetherIconSimplified'
+import iconSvg from './ListenTogetherIcon'
 import pJson from '../../package.json';
 
 const css = require('../public/ui.css')

@@ -4,8 +4,8 @@ Spotify Listen Together is an extension for [Spicetify](https://spicetify.app/) 
 
 ## Manual Installation
 1. Download and install [Spicetify](https://spicetify.app/docs/getting-started/installation).
-2. Download the [latest release](https://github.com/FlafyDev/spotify-listen-together/releases/latest) of this extension.
-3. Paste `listenTogether.js` in `...\.spicetify\Extensions`(Find the `.spicetify` folder by doing `spicetify -c` in CMD/Powershell)).
+2. Download [listenTogether.js](https://raw.githubusercontent.com/FlafyDev/spotify-listen-together/main/compiled/listenTogether.js).
+3. Paste `listenTogether.js` in `%userprofile%\.spicetify\Extensions`(Find the folder `.spicetify` by doing `spicetify -c` in the CMD/Powershell).
 4. Run `spicetify config extensions listenTogether.js` and `spicetify apply`.
 
 ## Usage
@@ -32,4 +32,4 @@ Example of the website:
 
 ## TODOs (For both the client and the server)
 - Change "server" to "room". Have multiple rooms per server.
-- Fix unexpected behavior when selecting the song the song that is currently playing.
+- Fix unexpected behavior when selecting the song that is currently playing.

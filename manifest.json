@@ -1,0 +1,13 @@
+{
+  "name": "Listen Together",
+  "description": "A free alternative to Group Sessions",
+  "preview": "icon.png",
+  "main": "compiled/listenTogether.js",
+  "readme": "README.md",
+  "authors": [
+    {
+      "name": "FlafyDev",
+      "url": "https://github.com/FlafyDev"
+    }
+  ]
+}
