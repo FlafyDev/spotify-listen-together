@@ -150,7 +150,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const ltPlayer_1 = __importDefault(require("./ltPlayer"));
 (function listenTogetherMain() {
-    if (!Spicetify.CosmosAsync || !Spicetify.Platform || !Spicetify.LocalStorage) {
+    if (!Spicetify.CosmosAsync || !Spicetify.Platform || !Spicetify.LocalStorage || !Spicetify.Platform.History) {
         setTimeout(listenTogetherMain, 1000);
         return;
     }
@@ -223,10 +223,11 @@ class LTPlayer {
         this.isHost = false;
         this.version = package_json_1.default.version;
         this.watchingAd = false;
-        this.canChangeVolume = true;
-        this.lastVolume = null;
         this.trackLoaded = true;
         this.currentLoadingTrack = "";
+        this.volumeChangeEnabled = !!patcher_1.OGFunctions.setVolume;
+        this.canChangeVolume = true;
+        this.lastVolume = null;
         this.patcher.patchAll();
         this.patcher.trackChanged.on((trackUri) => {
             this.onSongChanged(trackUri);
@@ -298,9 +299,11 @@ class LTPlayer {
                     patcher_1.OGFunctions.seekTo(0);
                     (_a = this.client.socket) === null || _a === void 0 ? void 0 : _a.emit("changedSong", trackUri, (_c = (_b = Spicetify.Platform.PlayerAPI._state) === null || _b === void 0 ? void 0 : _b.item) === null || _c === void 0 ? void 0 : _c.name, (_e = (_d = Spicetify.Platform.PlayerAPI._state) === null || _d === void 0 ? void 0 : _d.item) === null || _e === void 0 ? void 0 : _e.images[0]['url']);
                     // Change volume back to normal
-                    patcher_1.OGFunctions.setVolume(this.lastVolume);
-                    this.lastVolume = null;
-                    this.canChangeVolume = true;
+                    if (this.volumeChangeEnabled) {
+                        patcher_1.OGFunctions.setVolume(this.lastVolume);
+                        this.lastVolume = null;
+                        this.canChangeVolume = true;
+                    }
                 });
             }
             else {
@@ -310,16 +313,20 @@ class LTPlayer {
     }
     onLogin() {
         (0, spotifyUtils_1.pauseTrack)();
-        this.canChangeVolume = true;
-        this.lastVolume = Spicetify.Player.getVolume();
-        this.ui.bottomMessage("Connected to the server.");
+        if (this.volumeChangeEnabled) {
+            this.canChangeVolume = true;
+            this.lastVolume = Spicetify.Player.getVolume();
+            this.ui.bottomMessage("Connected to the server.");
+        }
     }
     muteBeforePlay() {
-        // Lower volume to 0
-        this.canChangeVolume = false;
-        if (this.lastVolume === null)
-            this.lastVolume = Spicetify.Player.getVolume();
-        patcher_1.OGFunctions.setVolume(0);
+        // Lower volume to 0s
+        if (this.volumeChangeEnabled) {
+            this.canChangeVolume = false;
+            if (this.lastVolume === null)
+                this.lastVolume = Spicetify.Player.getVolume();
+            patcher_1.OGFunctions.setVolume(0);
+        }
     }
 }
 exports.default = LTPlayer;
@@ -338,6 +345,7 @@ class Patcher {
     }
     get trackChanged() { return this.onTrackChanged.expose(); }
     patchAll() {
+        var _a;
         exports.OGFunctions = {
             play: Spicetify.Platform.PlayerAPI.play.bind(Spicetify.Platform.PlayerAPI),
             pause: Spicetify.Platform.PlayerAPI.pause.bind(Spicetify.Platform.PlayerAPI),
@@ -346,7 +354,7 @@ class Patcher {
             skipToNext: Spicetify.Platform.PlayerAPI.skipToNext.bind(Spicetify.Platform.PlayerAPI),
             skipToPrevious: Spicetify.Platform.PlayerAPI.skipToPrevious.bind(Spicetify.Platform.PlayerAPI),
             emitSync: Spicetify.Platform.PlayerAPI._events._emitter.emitSync.bind(Spicetify.Platform.PlayerAPI._events._emitter),
-            setVolume: Spicetify.Platform.PlayerAPI._volume.setVolume.bind(Spicetify.Platform.PlayerAPI._volume),
+            setVolume: (_a = Spicetify.Platform.PlayerAPI._volume) === null || _a === void 0 ? void 0 : _a.setVolume.bind(Spicetify.Platform.PlayerAPI._volume),
         };
         Spicetify.Platform.PlayerAPI._cosmos.sub("sp://player/v2/main", (data) => {
             var _a, _b, _c, _d;
@@ -414,10 +422,11 @@ class Patcher {
                     Spicetify.Player.seek(0);
             });
         };
-        Spicetify.Platform.PlayerAPI._volume.setVolume = (e) => {
-            if (!this.ltPlayer.client.connected || this.ltPlayer.canChangeVolume)
-                exports.OGFunctions.setVolume(e);
-        };
+        if (exports.OGFunctions.setVolume)
+            Spicetify.Platform.PlayerAPI._volume.setVolume = (e) => {
+                if (!this.ltPlayer.client.connected || this.ltPlayer.canChangeVolume)
+                    exports.OGFunctions.setVolume(e);
+            };
         Spicetify.Platform.History.listen(({ pathname }) => {
             let pathParts = pathname === null || pathname === void 0 ? void 0 : pathname.split("/", 3).filter(i => i);
             if (((pathParts === null || pathParts === void 0 ? void 0 : pathParts.length) || 0) >= 2 && pathParts[0].toLowerCase() == "listentogether") {
