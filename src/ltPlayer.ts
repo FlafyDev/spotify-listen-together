@@ -18,7 +18,7 @@ export default class LTPlayer {
   trackLoaded = true
   currentLoadingTrack = ""
 
-  volumeChangeEnabled = !!OGFunctions.setVolume;
+  volumeChangeEnabled = false;
   canChangeVolume = true;
   lastVolume: number | null = null;
 
@@ -33,6 +33,8 @@ export default class LTPlayer {
         resumeTrack()
       }
     }, 2000);
+
+    this.volumeChangeEnabled = !!OGFunctions.setVolume;
 
     // For testing
     (<any>Spicetify).OGFunctions = OGFunctions;

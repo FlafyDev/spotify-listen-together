@@ -150,7 +150,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const ltPlayer_1 = __importDefault(require("./ltPlayer"));
 (function listenTogetherMain() {
-    if (!Spicetify.CosmosAsync || !Spicetify.Platform || !Spicetify.LocalStorage || !Spicetify.Platform.History) {
+    if (!Spicetify.CosmosAsync || !Spicetify.Platform || !Spicetify.LocalStorage) {
         setTimeout(listenTogetherMain, 1000);
         return;
     }
@@ -225,7 +225,7 @@ class LTPlayer {
         this.watchingAd = false;
         this.trackLoaded = true;
         this.currentLoadingTrack = "";
-        this.volumeChangeEnabled = !!patcher_1.OGFunctions.setVolume;
+        this.volumeChangeEnabled = false;
         this.canChangeVolume = true;
         this.lastVolume = null;
         this.patcher.patchAll();
@@ -237,6 +237,7 @@ class LTPlayer {
                 (0, spotifyUtils_1.resumeTrack)();
             }
         }, 2000);
+        this.volumeChangeEnabled = !!patcher_1.OGFunctions.setVolume;
         // For testing
         Spicetify.OGFunctions = patcher_1.OGFunctions;
     }
