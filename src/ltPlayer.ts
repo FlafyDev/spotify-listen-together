@@ -15,10 +15,12 @@ export default class LTPlayer {
   isHost = false
   version = pJson.version
   watchingAd = false;
-  canChangeVolume = true;
-  lastVolume: number | null = null;
   trackLoaded = true
   currentLoadingTrack = ""
+
+  volumeChangeEnabled = !!OGFunctions.setVolume;
+  canChangeVolume = true;
+  lastVolume: number | null = null;
 
   constructor() {
     this.patcher.patchAll()
@@ -97,9 +99,11 @@ export default class LTPlayer {
           this.client.socket?.emit("changedSong", trackUri, Spicetify.Platform.PlayerAPI._state?.item?.name, Spicetify.Platform.PlayerAPI._state?.item?.images[0]['url'])
           
           // Change volume back to normal
-          OGFunctions.setVolume(this.lastVolume);
-          this.lastVolume = null
-          this.canChangeVolume = true;
+          if (this.volumeChangeEnabled) {
+            OGFunctions.setVolume(this.lastVolume);
+            this.lastVolume = null
+            this.canChangeVolume = true;
+          }
         })
       } else {
         this.client.socket?.emit("changedSong", trackUri)
@@ -109,16 +113,20 @@ export default class LTPlayer {
 
   onLogin() {
     pauseTrack()
-    this.canChangeVolume = true;
-    this.lastVolume = Spicetify.Player.getVolume();
-    this.ui.bottomMessage("Connected to the server.")
+    if (this.volumeChangeEnabled) {
+      this.canChangeVolume = true;
+      this.lastVolume = Spicetify.Player.getVolume();
+      this.ui.bottomMessage("Connected to the server.")
+    }
   }
 
   muteBeforePlay() {
-    // Lower volume to 0
-    this.canChangeVolume = false;
-    if (this.lastVolume === null)
-      this.lastVolume = Spicetify.Player.getVolume()
-    OGFunctions.setVolume(0);
+    // Lower volume to 0s
+    if (this.volumeChangeEnabled) {
+      this.canChangeVolume = false;
+      if (this.lastVolume === null)
+        this.lastVolume = Spicetify.Player.getVolume()
+      OGFunctions.setVolume(0);
+    }
   }
 }

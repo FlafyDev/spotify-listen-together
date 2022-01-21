@@ -32,7 +32,7 @@ export default class Patcher {
       skipToNext: Spicetify.Platform.PlayerAPI.skipToNext.bind(Spicetify.Platform.PlayerAPI),
       skipToPrevious: Spicetify.Platform.PlayerAPI.skipToPrevious.bind(Spicetify.Platform.PlayerAPI),
       emitSync: Spicetify.Platform.PlayerAPI._events._emitter.emitSync.bind(Spicetify.Platform.PlayerAPI._events._emitter),
-      setVolume: Spicetify.Platform.PlayerAPI._volume.setVolume.bind(Spicetify.Platform.PlayerAPI._volume),
+      setVolume: Spicetify.Platform.PlayerAPI._volume?.setVolume.bind(Spicetify.Platform.PlayerAPI._volume),
     }
     
     Spicetify.Platform.PlayerAPI._cosmos.sub("sp://player/v2/main", (data: any) => {
@@ -108,10 +108,11 @@ export default class Patcher {
       })
     }
 
-    Spicetify.Platform.PlayerAPI._volume.setVolume = (e: number) => {
-      if (!this.ltPlayer.client.connected || this.ltPlayer.canChangeVolume)
-        OGFunctions.setVolume(e)
-    }
+    if (OGFunctions.setVolume)
+      Spicetify.Platform.PlayerAPI._volume.setVolume = (e: number) => {
+        if (!this.ltPlayer.client.connected || this.ltPlayer.canChangeVolume)
+          OGFunctions.setVolume(e)
+      }
 
     Spicetify.Platform.History.listen(({pathname}: {pathname?: string}) => {
       let pathParts = pathname?.split("/", 3).filter(i => i)
