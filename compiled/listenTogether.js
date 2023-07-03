@@ -133,8 +133,8 @@ class Client {
         this.connected = false;
         this.ltPlayer.isHost = false;
         this.connecting = false;
-        // this.ltPlayer.ui.menuItems.joinServer?.setName("Join a server")
-        // this.ltPlayer.ui.menuItems.requestHost?.setName("Request host");
+        this.ltPlayer.ui.menuItems.joinServer?.setName("Join a server");
+        this.ltPlayer.ui.menuItems.requestHost?.setName("Request host");
         this.ltPlayer.ui.renderBottomInfo(react_1.default.createElement(bottomInfo_1.default, { server: "" }));
         this.ltPlayer.ui.disconnectedPopup();
     }
